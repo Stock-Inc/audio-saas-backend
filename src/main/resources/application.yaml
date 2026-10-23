@@ -17,5 +17,12 @@ spring:
     enabled: true
     change-log: db/changelog/changelog-master.xml
 
+keycloak:
+  admin:
+    base-url: http://keycloak:8080
+    realm: demo
+    client-id: backend-registration
+    client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET}
+
 server:
   port: 8081
