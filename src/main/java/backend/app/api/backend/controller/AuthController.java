@@ -32,26 +32,4 @@ public class AuthController {
                 .status(HttpStatus.CREATED)
                 .build();
     }
-
-    @PostMapping("/login")
-    public ResponseEntity<?> login(
-            @Valid @RequestBody LoginRequest request
-    ) {
-        registrationService.login(request);
-
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .build();
-    }
-
-    @GetMapping("/me")
-    public Map<String, String> me(
-            @AuthenticationPrincipal OidcUser user
-    ) {
-        return Map.of(
-                "id", Objects.requireNonNull(user.getSubject()),
-                "username", Objects.requireNonNull(user.getPreferredUsername()),
-                "email", Objects.requireNonNull(user.getEmail())
-        );
-    }
 }

@@ -125,8 +125,4 @@ public class RegistrationService {
             );
         }
     }
-
-    public void login(@Valid LoginRequest request) {
-        System.out.println("Hello!");
-    }
 }

@@ -1,4 +1,3 @@
-
 FROM jenkins/jenkins:lts-jdk21
 
 USER root
