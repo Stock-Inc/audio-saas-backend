@@ -15,28 +15,52 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
+                echo "Branch: ${env.BRANCH_NAME}"
             }
         }
 
-        stage('Check Docker') {
-            steps {
-                sh 'docker version'
-            }
-        }
-
-        stage('Build Image') {
+        stage('Tests') {
             steps {
                 sh '''
-                    docker build \
-                      --label "org.opencontainers.image.source=https://github.com/Stock-Inc/audio-saas-backend" \
-                      -t "$IMAGE:dev" \
-                      -t "$IMAGE:build-$BUILD_NUMBER" \
+                    docker build --progress=plain \
+                      --target build \
+                      -t "audio-saas-test:$(git rev-parse --short=12 HEAD)" \
                       .
                 '''
             }
         }
 
-        stage('Push Image') {
+        stage('Build Docker Image') {
+            when {
+                anyOf {
+                    branch 'develop'
+                    branch 'main'
+                }
+            }
+
+            steps {
+                script {
+                    env.IMAGE_TAG = env.BRANCH_NAME == 'develop'
+                        ? 'dev'
+                        : 'latest'
+                }
+
+                sh '''
+                    docker build \
+                      -t "$IMAGE:$IMAGE_TAG" \
+                      .
+                '''
+            }
+        }
+
+        stage('Push to GHCR') {
+            when {
+                anyOf {
+                    branch 'develop'
+                    branch 'main'
+                }
+            }
+
             steps {
                 withCredentials([
                     usernamePassword(
@@ -53,17 +77,11 @@ pipeline {
                             -u "$GH_USER" \
                             --password-stdin
 
-                        docker push "$IMAGE:dev"
-                        docker push "$IMAGE:build-$BUILD_NUMBER"
+                        docker push "$IMAGE:$IMAGE_TAG"
+                        docker logout ghcr.io
                     '''
                 }
             }
-        }
-    }
-
-    post {
-        always {
-            sh 'docker logout ghcr.io || true'
         }
     }
 }

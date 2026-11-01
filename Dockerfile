@@ -5,7 +5,7 @@ WORKDIR /build
 COPY pom.xml .
 COPY src ./src
 
-RUN mvn clean package -DskipTests
+RUN mvn -B clean verify
 
 FROM bellsoft/liberica-openjre-debian:25-cds
 
