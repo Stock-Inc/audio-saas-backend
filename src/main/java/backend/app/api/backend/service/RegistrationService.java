@@ -1,8 +1,10 @@
 
 package backend.app.api.backend.service;
 
+import backend.app.api.backend.dto.LoginRequest;
 import backend.app.api.backend.dto.RegisterRequest;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import backend.app.api.backend.dto.TokenResponse;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -18,13 +20,8 @@ import java.util.Map;
 @Service
 public class RegistrationService {
 
-    private final RestClient client = RestClient.create();
-
     @Value("${keycloak.admin.base-url}")
     private String baseUrl;
-
-    @Value("${keycloak.admin.realm}")
-    private String realm;
 
     @Value("${keycloak.admin.client-id}")
     private String clientId;
@@ -32,14 +29,28 @@ public class RegistrationService {
     @Value("${keycloak.admin.client-secret}")
     private String clientSecret;
 
+    private final RestClient client;
+
+    private final String realm;
+
+    public RegistrationService(
+            RestClient.Builder builder,
+            @Value("${keycloak.admin.base-url}") String baseUrl,
+            @Value("${keycloak.admin.realm}") String realm
+    ) {
+        this.client = builder
+                .baseUrl(baseUrl)
+                .build();
+
+        this.realm = realm;
+    }
+
     public void register(RegisterRequest request) {
         String token = getAdminToken();
 
         Map<String, Object> user = Map.of(
                 "username", request.username(),
                 "email", request.email(),
-                "firstName", request.firstName(),
-                "lastName", request.lastName(),
                 "enabled", true,
                 "emailVerified", false,
                 "credentials", List.of(Map.of(
@@ -83,7 +94,7 @@ public class RegistrationService {
     }
 
     private String getAdminToken() {
-        var form = new LinkedMultiValueMap<String, String>();
+        LinkedMultiValueMap<String, String> form = new LinkedMultiValueMap<>();
 
         form.add("grant_type", "client_credentials");
         form.add("client_id", clientId);
@@ -115,7 +126,7 @@ public class RegistrationService {
         }
     }
 
-    public record TokenResponse(
-            @JsonProperty("access_token") String accessToken
-    ) {}
+    public void login(@Valid LoginRequest request) {
+        System.out.println("Hello!");
+    }
 }

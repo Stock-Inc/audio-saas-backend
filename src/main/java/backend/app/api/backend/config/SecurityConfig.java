@@ -71,7 +71,9 @@ public class SecurityConfig {
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
-                .oauth2Login(Customizer.withDefaults())
+                .oauth2Login(login -> login
+                        .defaultSuccessUrl("/api/v1/auth/me", true)
+                )
                 .build();
     }
 }

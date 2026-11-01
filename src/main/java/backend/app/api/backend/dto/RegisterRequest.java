@@ -6,8 +6,10 @@ import jakarta.validation.constraints.Size;
 
 public record RegisterRequest(
         @NotBlank String username,
-        @Email @NotBlank String email,
-        @Size(min = 12) String password,
-        @NotBlank String firstName,
-        @NotBlank String lastName
+
+        @NotBlank
+        @Email String email,
+
+        @NotBlank
+        @Size(min = 8) String password
 ) {}

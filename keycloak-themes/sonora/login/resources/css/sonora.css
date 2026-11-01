@@ -1,0 +1,186 @@
+/* Sonora login for Keycloak 25.0.5; inherits the official login.ftl. */
+:root {
+  --sn-bg: #0C0A09;
+  --sn-card: #1C1917;
+  --sn-fg: #FFFBEB;
+  --sn-muted: #A6A09B;
+  --sn-accent: #DB762F;
+  --sn-line: rgba(255,255,255,.1);
+}
+html.login-pf, html.login-pf body {
+  background: var(--sn-bg) !important;
+  background-image: none !important;
+  min-height: 100%;
+  color: var(--sn-fg);
+  font-family: "IBM Plex Mono", "Courier New", monospace;
+}
+html.login-pf body { margin: 0; min-height: 100vh; }
+.login-pf-page { min-height: 100vh; padding-bottom: 40px; }
+/* Sonora topbar. It uses the built-in kc-header block instead of an FTL override. */
+.login-pf-page #kc-header {
+  height: 64px;
+  width: 100%;
+  padding: 0 24px !important;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  background: var(--sn-card);
+  border: 1px solid var(--sn-line);
+  text-align: left;
+  white-space: normal;
+  margin: 0;
+  float: none;
+}
+.login-pf-page #kc-header-wrapper {
+  padding: 0 !important;
+  margin: 0;
+  font-size: 0;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.login-pf-page #kc-header-wrapper::before {
+  content: "";
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  background: url('../img/waveform.svg') center / contain no-repeat;
+}
+.login-pf-page #kc-header-wrapper::after {
+  content: "sonora";
+  font-family: Newsreader, Georgia, serif;
+  font-size: 24px;
+  font-weight: 400;
+  color: var(--sn-fg);
+  line-height: 1.1;
+}
+/* Sign-in card */
+.login-pf-page .card-pf {
+  box-sizing: border-box;
+  width: min(440px, calc(100% - 32px));
+  max-width: 440px;
+  margin: clamp(65px, 24vh, 232px) auto 0 !important;
+  padding: 32px !important;
+  min-height: 432px;
+  background: var(--sn-card) !important;
+  color: var(--sn-fg);
+  border: 1px solid var(--sn-line) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.login-pf-page #kc-page-title {
+  margin: 0 0 8px !important;
+  font: 400 36px/1.05 Newsreader, Georgia, serif;
+  color: var(--sn-fg) !important;
+  text-align: left;
+}
+.login-pf-page #kc-page-title::after {
+  content: "Войдите в аккаунт, чтобы продолжить";
+  display: block;
+  margin-top: 8px;
+  margin-bottom: 24px;
+  font: 400 11px/1.5 "IBM Plex Mono", "Courier New", monospace;
+  color: var(--sn-muted);
+}
+.login-pf-page #kc-content-wrapper,
+.login-pf-page #kc-form-wrapper,
+.login-pf-page #kc-content { margin: 0 !important; padding: 0 !important; }
+.login-pf-page form#kc-form-login .form-group {
+  margin-bottom: 16px;
+}
+.login-pf-page #kc-form-login label.pf-c-form__label,
+.login-pf-page #kc-form-login .pf-c-form__label-text {
+  display: block;
+  font: 500 9px/1.3 "IBM Plex Mono", "Courier New", monospace;
+  letter-spacing: .06em;
+  color: var(--sn-muted) !important;
+  margin: 0 0 8px;
+}
+.login-pf-page #kc-form-login input.pf-c-form-control {
+  width: 100%;
+  height: 40px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border: 1px solid rgba(255,255,255,.15) !important;
+  border-radius: 0 !important;
+  color: var(--sn-fg) !important;
+  background: var(--sn-card) !important;
+  box-shadow: none !important;
+  font: 400 13px/20px "IBM Plex Mono", "Courier New", monospace;
+}
+.login-pf-page #kc-form-login input.pf-c-form-control::placeholder { color: var(--sn-muted); }
+.login-pf-page #kc-form-login .pf-c-input-group { display: flex; }
+.login-pf-page #kc-form-login .pf-c-input-group input { flex: 1; min-width: 0; }
+.login-pf-page #kc-form-login .pf-c-input-group button {
+  border: 1px solid rgba(255,255,255,.15);
+  border-left: 0;
+  border-radius: 0;
+  color: var(--sn-muted);
+  background: var(--sn-card);
+}
+.login-pf-page #kc-form-login .login-pf-settings {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+  margin-bottom: 22px;
+}
+.login-pf-page #kc-form-options .checkbox { margin: 0; color: var(--sn-fg); }
+.login-pf-page #kc-form-options .checkbox label {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--sn-fg) !important;
+  font: 400 10px/1.4 "IBM Plex Mono", monospace;
+}
+.login-pf-page #kc-form-options input[type="checkbox"] { accent-color: var(--sn-accent); }
+.login-pf-page a { color: var(--sn-accent) !important; text-decoration: none; }
+.login-pf-page a:hover { text-decoration: underline; }
+.login-pf-page .kcFormOptionsWrapperClass,
+.login-pf-page .login-pf-settings a,
+.login-pf-page #kc-registration a { font-size: 10px; }
+.login-pf-page #kc-form-buttons { margin: 0 0 15px; }
+.login-pf-page input#kc-login {
+  width: 100%;
+  height: 40px;
+  background: var(--sn-accent) !important;
+  color: var(--sn-fg) !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font: 500 13px/20px "IBM Plex Mono", monospace;
+  cursor: pointer;
+}
+.login-pf-page input#kc-login:hover { background: #e78a43 !important; }
+.login-pf-page input:focus-visible,
+.login-pf-page button:focus-visible,
+.login-pf-page a:focus-visible { outline: 2px solid var(--sn-accent); outline-offset: 2px; }
+.login-pf-page #kc-info { margin: 18px 0 0 !important; }
+.login-pf-page #kc-info-wrapper {
+  padding: 0 !important;
+  background: transparent !important;
+  text-align: center;
+  font-size: 10px;
+  color: #79716B;
+}
+.login-pf-page .alert-error,
+.login-pf-page .alert-warning,
+.login-pf-page .pf-c-alert { background: #29201c; color: var(--sn-fg); border: 1px solid #b85b3c; }
+.login-pf-page .pf-c-form__helper-text.pf-m-error { color: #ffafa1; }
+.login-pf-page #kc-locale-dropdown button { color: var(--sn-muted); }
+@media(max-width: 600px) {
+  .login-pf-page #kc-header { padding: 0 18px !important; }
+  .login-pf-page .card-pf { margin: 48px auto 0 !important; padding: 28px 22px !important; min-height: 0; }
+  .login-pf-page #kc-page-title { font-size: 32px; }
+}
+
+.login-pf-page #kc-header-wrapper {
+  background-image: none !important;
+  background: transparent !important;
+}
