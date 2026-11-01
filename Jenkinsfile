@@ -22,7 +22,7 @@ pipeline {
         stage('Tests') {
             steps {
                 sh '''
-                    docker build --progress=plain \
+                    docker build \
                       --target build \
                       -t "audio-saas-test:$(git rev-parse --short=12 HEAD)" \
                       .
