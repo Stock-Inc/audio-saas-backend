@@ -14,3 +14,5 @@ WORKDIR /application
 COPY --from=build /build/target/*.jar application.jar
 
 ENTRYPOINT ["java", "-jar", "application.jar"]
+
+LABEL org.opencontainers.image.source="https://github.com/Stock-Inc/audio-saas-backend"
