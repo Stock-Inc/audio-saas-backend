@@ -20,11 +20,20 @@ pipeline {
             }
         }
 
+
         stage('Tests') {
+            tools {
+                jdk 'JDK-25'
+                maven 'Maven-3.9'
+            }
+
             steps {
+                sh 'java -version'
+                sh 'mvn -version'
                 sh 'mvn -B clean test'
             }
         }
+
 
         stage('Build Backend') {
             when {
