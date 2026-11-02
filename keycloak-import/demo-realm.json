@@ -93,6 +93,9 @@
                                 }
                             ],
                   "client":  {
+                                 "sonora-android":  [
+
+                                                    ],
                                  "backend-registration":  [
 
                                                           ],
@@ -540,38 +543,6 @@
     "webAuthnPolicyPasswordlessExtraOrigins":  [
 
                                                ],
-    "users":  [
-                  {
-                      "id":  "1fe2aa9e-8deb-4804-9cc3-79948551e496",
-                      "username":  "service-account-backend-registration",
-                      "emailVerified":  false,
-                      "createdTimestamp":  1792773846187,
-                      "enabled":  true,
-                      "totp":  false,
-                      "serviceAccountClientId":  "backend-registration",
-                      "credentials":  [
-
-                                      ],
-                      "disableableCredentialTypes":  [
-
-                                                     ],
-                      "requiredActions":  [
-
-                                          ],
-                      "realmRoles":  [
-                                         "default-roles-demo"
-                                     ],
-                      "clientRoles":  {
-                                          "realm-management":  [
-                                                                   "manage-users"
-                                                               ]
-                                      },
-                      "notBefore":  0,
-                      "groups":  [
-
-                                 ]
-                  }
-              ],
     "scopeMappings":  [
                           {
                               "clientScope":  "offline_access",
@@ -764,20 +735,20 @@
                         "clientAuthenticatorType":  "client-secret",
                         "secret":  "${KEYCLOAK_ADMIN_CLIENT_SECRET}",
                         "redirectUris":  [
-
+                                             "/*"
                                          ],
                         "webOrigins":  [
-
+                                           "/*"
                                        ],
                         "notBefore":  0,
                         "bearerOnly":  false,
                         "consentRequired":  false,
-                        "standardFlowEnabled":  false,
+                        "standardFlowEnabled":  true,
                         "implicitFlowEnabled":  false,
                         "directAccessGrantsEnabled":  false,
                         "serviceAccountsEnabled":  true,
                         "publicClient":  false,
-                        "frontchannelLogout":  false,
+                        "frontchannelLogout":  true,
                         "protocol":  "openid-connect",
                         "attributes":  {
                                            "oidc.ciba.grant.enabled":  "false",
@@ -1000,6 +971,70 @@
                                                                }
                                                 }
                                             ],
+                        "defaultClientScopes":  [
+                                                    "web-origins",
+                                                    "acr",
+                                                    "roles",
+                                                    "profile",
+                                                    "basic",
+                                                    "email"
+                                                ],
+                        "optionalClientScopes":  [
+                                                     "address",
+                                                     "phone",
+                                                     "offline_access",
+                                                     "microprofile-jwt"
+                                                 ]
+                    },
+                    {
+                        "id":  "ef2a1a55-a9a2-4cbd-be66-fda642287e14",
+                        "clientId":  "sonora-android",
+                        "name":  "",
+                        "description":  "",
+                        "rootUrl":  "",
+                        "adminUrl":  "",
+                        "baseUrl":  "",
+                        "surrogateAuthRequired":  false,
+                        "enabled":  true,
+                        "alwaysDisplayInConsole":  false,
+                        "clientAuthenticatorType":  "client-secret",
+                        "redirectUris":  [
+                                             "dev.alnoer.audiosaas:/oauth2redirect"
+                                         ],
+                        "webOrigins":  [
+
+                                       ],
+                        "notBefore":  0,
+                        "bearerOnly":  false,
+                        "consentRequired":  false,
+                        "standardFlowEnabled":  true,
+                        "implicitFlowEnabled":  false,
+                        "directAccessGrantsEnabled":  false,
+                        "serviceAccountsEnabled":  false,
+                        "publicClient":  true,
+                        "frontchannelLogout":  true,
+                        "protocol":  "openid-connect",
+                        "attributes":  {
+                                           "client.introspection.response.allow.jwt.claim.enabled":  "false",
+                                           "oauth2.device.authorization.grant.enabled":  "false",
+                                           "backchannel.logout.revoke.offline.tokens":  "false",
+                                           "use.refresh.tokens":  "true",
+                                           "oidc.ciba.grant.enabled":  "false",
+                                           "client.use.lightweight.access.token.enabled":  "false",
+                                           "backchannel.logout.session.required":  "true",
+                                           "client_credentials.use_refresh_token":  "false",
+                                           "acr.loa.map":  "{}",
+                                           "require.pushed.authorization.requests":  "false",
+                                           "tls.client.certificate.bound.access.tokens":  "false",
+                                           "display.on.consent.screen":  "false",
+                                           "pkce.code.challenge.method":  "S256",
+                                           "token.response.type.bearer.lower-case":  "false"
+                                       },
+                        "authenticationFlowBindingOverrides":  {
+
+                                                               },
+                        "fullScopeAllowed":  true,
+                        "nodeReRegistrationTimeout":  -1,
                         "defaultClientScopes":  [
                                                     "web-origins",
                                                     "acr",
@@ -2537,5 +2572,37 @@
                            "policies":  [
 
                                         ]
-                       }
+                       },
+    "users":  [
+                  {
+                      "id":  "1fe2aa9e-8deb-4804-9cc3-79948551e496",
+                      "username":  "service-account-backend-registration",
+                      "emailVerified":  false,
+                      "createdTimestamp":  1792773846187,
+                      "enabled":  true,
+                      "totp":  false,
+                      "serviceAccountClientId":  "backend-registration",
+                      "credentials":  [
+
+                                      ],
+                      "disableableCredentialTypes":  [
+
+                                                     ],
+                      "requiredActions":  [
+
+                                          ],
+                      "realmRoles":  [
+                                         "default-roles-demo"
+                                     ],
+                      "clientRoles":  {
+                                          "realm-management":  [
+                                                                   "manage-users"
+                                                               ]
+                                      },
+                      "notBefore":  0,
+                      "groups":  [
+
+                                 ]
+                  }
+              ]
 }
