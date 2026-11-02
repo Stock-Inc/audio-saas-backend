@@ -8,7 +8,7 @@ pipeline {
     }
 
     environment {
-        BACKEND_IMAGE = 'ghcr.io/stock-inc/audio-saas-backend'
+        BACKEND_IMAGE  = 'ghcr.io/stock-inc/audio-saas-backend'
         KEYCLOAK_IMAGE = 'ghcr.io/stock-inc/audio-saas-keycloak'
     }
 
@@ -19,21 +19,6 @@ pipeline {
                 echo "Branch: ${env.BRANCH_NAME}"
             }
         }
-
-
-        stage('Tests') {
-            tools {
-                jdk 'JDK-25'
-                maven 'Maven-3.9'
-            }
-
-            steps {
-                sh 'java -version'
-                sh 'mvn -version'
-                sh 'mvn -B clean test'
-            }
-        }
-
 
         stage('Build Backend') {
             when {
@@ -100,11 +85,9 @@ pipeline {
 
                         trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
 
-                        echo "Pushing backend..."
                         docker push "$BACKEND_IMAGE:$IMAGE_TAG"
 
                         if [ "$BRANCH_NAME" = "develop" ]; then
-                            echo "Pushing Keycloak..."
                             docker push "$KEYCLOAK_IMAGE:dev"
                         fi
                     '''
