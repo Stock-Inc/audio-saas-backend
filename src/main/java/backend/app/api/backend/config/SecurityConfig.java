@@ -69,6 +69,11 @@ public class SecurityConfig {
                                 HttpMethod.POST,
                                 "/api/v1/auth/register"
                         ).permitAll()
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(login -> login

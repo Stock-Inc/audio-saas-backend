@@ -8,7 +8,8 @@ pipeline {
     }
 
     environment {
-        IMAGE = 'ghcr.io/stock-inc/audio-saas-backend'
+        BACKEND_IMAGE  = 'ghcr.io/stock-inc/audio-saas-backend'
+        KEYCLOAK_IMAGE = 'ghcr.io/stock-inc/audio-saas-keycloak'
     }
 
     stages {
@@ -19,18 +20,7 @@ pipeline {
             }
         }
 
-        stage('Tests') {
-            steps {
-                sh '''
-                    docker build \
-                      --target build \
-                      -t "audio-saas-test:$(git rev-parse --short=12 HEAD)" \
-                      .
-                '''
-            }
-        }
-
-        stage('Build Docker Image') {
+        stage('Build Backend') {
             when {
                 anyOf {
                     branch 'develop'
@@ -41,19 +31,34 @@ pipeline {
             steps {
                 script {
                     env.IMAGE_TAG = env.BRANCH_NAME == 'develop'
-                        ? 'dev'
-                        : 'latest'
+                    ? 'dev'
+                    : 'latest'
                 }
 
                 sh '''
                     docker build \
-                      -t "$IMAGE:$IMAGE_TAG" \
+                      -t "$BACKEND_IMAGE:$IMAGE_TAG" \
                       .
                 '''
             }
         }
 
-        stage('Push to GHCR') {
+        stage('Build Keycloak') {
+            when {
+                branch 'develop'
+            }
+
+            steps {
+                sh '''
+                    docker build \
+                      -f Dockerfile.keycloak \
+                      -t "$KEYCLOAK_IMAGE:dev" \
+                      .
+                '''
+            }
+        }
+
+        stage('Push Images to GHCR') {
             when {
                 anyOf {
                     branch 'develop'
@@ -63,22 +68,28 @@ pipeline {
 
             steps {
                 withCredentials([
-                    usernamePassword(
-                        credentialsId: 'ghcr-credentials',
-                        usernameVariable: 'GH_USER',
-                        passwordVariable: 'GH_TOKEN'
-                    )
-                ]) {
+                        usernamePassword(
+                            credentialsId: 'ghcr-credentials',
+                            usernameVariable: 'GH_USER',
+                            passwordVariable: 'GH_TOKEN'
+                        )
+                    ]) {
                     sh '''
+                        set -eu
                         set +x
 
-                        printf '%s' "$GH_TOKEN" |
+                        printf '%s' "$GH_TOKEN" | \
                           docker login ghcr.io \
                             -u "$GH_USER" \
                             --password-stdin
 
-                        docker push "$IMAGE:$IMAGE_TAG"
-                        docker logout ghcr.io
+                        trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
+
+                        docker push "$BACKEND_IMAGE:$IMAGE_TAG"
+
+                        if [ "$BRANCH_NAME" = "develop" ]; then
+                            docker push "$KEYCLOAK_IMAGE:dev"
+                        fi
                     '''
                 }
             }
