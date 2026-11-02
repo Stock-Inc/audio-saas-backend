@@ -45,16 +45,14 @@ pipeline {
 
         stage('Build Keycloak') {
             when {
-                branch 'develop'
+                anyOf {
+                    branch 'develop'
+                    branch 'main'
+                }
             }
 
             steps {
-                sh '''
-                    docker build \
-                      -f Dockerfile.keycloak \
-                      -t "$KEYCLOAK_IMAGE:dev" \
-                      .
-                '''
+                sh 'docker build -f Dockerfile.keycloak -t "$KEYCLOAK_IMAGE:$IMAGE_TAG" .'
             }
         }
 
