@@ -2,6 +2,7 @@
 package backend.app.api.backend.controller;
 
 import backend.app.api.backend.dto.RegisterRequest;
+import backend.app.api.backend.dto.RegisterResponse;
 import backend.app.api.backend.service.RegistrationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -61,13 +62,16 @@ public class AuthController {
                     )
             )
     })
-    public ResponseEntity<?> register(
+    public ResponseEntity<RegisterResponse> register(
             @Valid @RequestBody RegisterRequest request
     ) {
         registrationService.register(request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .build();
+                .body(new RegisterResponse(
+                        true,
+                        "Пользователь успешно зарегистрирован"
+                ));
     }
 }
