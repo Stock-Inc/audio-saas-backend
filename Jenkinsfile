@@ -10,6 +10,7 @@ pipeline {
     environment {
         BACKEND_IMAGE  = 'ghcr.io/stock-inc/audio-saas-backend'
         KEYCLOAK_IMAGE = 'ghcr.io/stock-inc/audio-saas-keycloak'
+        IMAGE_TAG      = 'dev'
     }
 
     stages {
@@ -29,16 +30,10 @@ pipeline {
             }
 
             steps {
-                script {
-                    env.IMAGE_TAG = env.BRANCH_NAME == 'develop'
-                    ? 'dev'
-                    : 'latest'
-                }
-
                 sh '''
                     docker build \
-                      -t "$BACKEND_IMAGE:$IMAGE_TAG" \
-                      .
+                        -t "$BACKEND_IMAGE:$IMAGE_TAG" \
+                        .
                 '''
             }
         }
@@ -52,7 +47,12 @@ pipeline {
             }
 
             steps {
-                sh 'docker build -f Dockerfile.keycloak -t "$KEYCLOAK_IMAGE:$IMAGE_TAG" .'
+                sh '''
+                    docker build \
+                        -f Dockerfile.keycloak \
+                        -t "$KEYCLOAK_IMAGE:$IMAGE_TAG" \
+                        .
+                '''
             }
         }
 
@@ -77,17 +77,14 @@ pipeline {
                         set +x
 
                         printf '%s' "$GH_TOKEN" | \
-                          docker login ghcr.io \
+                            docker login ghcr.io \
                             -u "$GH_USER" \
                             --password-stdin
 
                         trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
 
                         docker push "$BACKEND_IMAGE:$IMAGE_TAG"
-
-                        if [ "$BRANCH_NAME" = "develop" ]; then
-                            docker push "$KEYCLOAK_IMAGE:dev"
-                        fi
+                        docker push "$KEYCLOAK_IMAGE:$IMAGE_TAG"
                     '''
                 }
             }
