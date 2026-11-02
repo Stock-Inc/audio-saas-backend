@@ -1,9 +1,11 @@
 FROM quay.io/keycloak/keycloak:25.0.5
 
-# Realm demo
-COPY keycloak-import/demo-realm.json \
-     /opt/keycloak/data/import/demo-realm.json
+# Конфигурация Realm demo
+COPY --chown=keycloak:keycloak \
+    keycloak-import/demo-realm.json \
+    /opt/keycloak/data/import/demo-realm.json
 
-# Кастомная тема входа Sonora
-COPY keycloak-themes/sonora/ \
-     /opt/keycloak/themes/sonora/
+# Кастомная тема Sonora
+COPY --chown=keycloak:keycloak \
+    keycloak-themes/sonora \
+    /opt/keycloak/themes/sonora
