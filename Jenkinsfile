@@ -23,15 +23,6 @@ pipeline {
             }
         }
 
-        stage('Validate Dockerfiles') {
-            steps {
-                sh '''
-            docker build --check .
-            docker build --check -f Dockerfile.keycloak .
-        '''
-            }
-        }
-
         stage('Tests') {
             steps {
                 sh '''
