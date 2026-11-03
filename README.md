@@ -75,7 +75,7 @@ function register() {
 
 ## Получение текущего пользователя
 
-После успешной авторизации frontend может получить пользователя через защищённый endpoint:
+Frontend может проверить текущую backend-сессию через endpoint:
 
 ```text
 GET http://localhost:8081/api/v1/auth/me
@@ -92,13 +92,25 @@ async function loadCurrentUser() {
     }
   );
 
+  if (response.status === 401) {
+    return null;
+  }
+
   if (!response.ok) {
-    throw new Error("Пользователь не авторизован");
+    throw new Error("Не удалось получить текущего пользователя");
   }
 
   return response.json();
 }
 ```
+
+Endpoint не запускает OAuth2-flow автоматически:
+
+- `200 OK` — в браузере есть активная backend-сессия; ответ содержит пользователя;
+- `401 Unauthorized` — активной сессии нет, независимо от того, зарегистрирован ли пользователь в Keycloak;
+- для начала входа frontend явно переходит на `GET /oauth2/authorization/keycloak`.
+
+Таким образом, `/api/v1/auth/me` определяет состояние текущей сессии, но намеренно не позволяет анонимно проверять существование конкретной учётной записи.
 
 Успешный ответ:
 
@@ -193,7 +205,7 @@ fetch("http://localhost:8081/api/v1/auth/me", {
 | Начать логин | `GET /oauth2/authorization/keycloak` | Реализовано |
 | Открыть регистрацию | Тот же OAuth2 endpoint, затем ссылка регистрации в Keycloak | Реализовано |
 | OAuth2 callback | `GET /login/oauth2/code/keycloak` | Вызывается Keycloak, не frontend |
-| Получить пользователя | `GET /api/v1/auth/me` | Реализовано |
+| Проверить сессию / получить пользователя | `GET /api/v1/auth/me` | `200` с пользователем или `401`, без OAuth2-редиректа |
 | Открыть регистрацию напрямую | `GET /api/v1/auth/register` | Не реализовано |
 | Вернуться после входа на страницу SPA | Например, `/auth/callback` | Не реализовано |
 | Явно завершить frontend/Keycloak-сессию | Отдельный logout-flow | Не настроено |
