@@ -1,4 +1,6 @@
 .env
+.env.sonar
+
 
 /target/
 !.mvn/wrapper/maven-wrapper.jar
