@@ -1,7 +1,6 @@
 package backend.app.api.backend;
 
 import backend.app.api.backend.dto.LoginRequest;
-import backend.app.api.backend.dto.RegisterRequest;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.Test;
@@ -16,27 +15,19 @@ class BackendApplicationTests {
             .getValidator();
 
     @Test
-    void validRequestsPassValidation() {
-        var registerRequest = new RegisterRequest(
-                "user",
-                "user@example.com",
-                "password"
-        );
+    void validLoginRequestPassesValidation() {
         var loginRequest = new LoginRequest(
                 "user@example.com",
                 "password"
         );
 
-        assertTrue(validator.validate(registerRequest).isEmpty());
         assertTrue(validator.validate(loginRequest).isEmpty());
     }
 
     @Test
-    void invalidRequestsFailValidation() {
-        var registerRequest = new RegisterRequest("", "invalid", "short");
+    void invalidLoginRequestFailsValidation() {
         var loginRequest = new LoginRequest("invalid", "short");
 
-        assertEquals(3, validator.validate(registerRequest).size());
         assertEquals(2, validator.validate(loginRequest).size());
     }
 
