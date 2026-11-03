@@ -166,7 +166,25 @@ http://localhost:3000/auth/callback
 
 Если frontend и backend работают на разных origins, frontend должен использовать `credentials: "include"`, а backend должен разрешать конкретный frontend origin и credentials.
 
-Сейчас отдельная CORS-конфигурация в проекте отсутствует. До её добавления frontend должен обращаться к backend через тот же origin или через frontend dev proxy/reverse proxy.
+Разрешённые frontend origins задаются переменной окружения `CORS_ALLOWED_ORIGINS`. Для одного origin:
+
+```dotenv
+CORS_ALLOWED_ORIGINS=http://localhost:3000
+```
+
+Несколько origins перечисляются через запятую без завершающего `/`:
+
+```dotenv
+CORS_ALLOWED_ORIGINS=http://localhost:3000,https://app.example.com
+```
+
+Backend разрешает запросы с credentials только с перечисленных origins. На frontend для запросов с session cookie нужно указывать:
+
+```javascript
+fetch("http://localhost:8081/api/v1/auth/me", {
+  credentials: "include"
+});
+```
 
 ## Текущий frontend-контракт
 
