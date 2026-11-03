@@ -24,13 +24,6 @@ pipeline {
         }
 
         stage('Tests') {
-            when {
-                anyOf {
-                    branch 'develop'
-                    branch 'main'
-                }
-            }
-
             steps {
                 sh '''
             docker build \
