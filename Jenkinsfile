@@ -1,10 +1,12 @@
-
 pipeline {
     agent any
 
     options {
         timestamps()
         disableConcurrentBuilds()
+        timeout(time: 30, unit: 'MINUTES')
+        buildDiscarder(logRotator(noToKeepStr: '10'))
+        skipDefaultCheckout()
     }
 
     environment {
@@ -18,6 +20,24 @@ pipeline {
             steps {
                 checkout scm
                 echo "Branch: ${env.BRANCH_NAME}"
+            }
+        }
+
+        stage('Tests') {
+            when {
+                anyOf {
+                    branch 'develop'
+                    branch 'main'
+                }
+            }
+
+            steps {
+                sh '''
+            docker build \
+                --target build \
+                -t audio-saas-backend-tests:dev \
+                .
+        '''
             }
         }
 
