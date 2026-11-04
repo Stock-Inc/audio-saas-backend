@@ -25,7 +25,9 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:8081:8081"
+
     environment:
+      AUDIO_PROCESSOR_URL: ${AUDIO_PROCESSOR_URL}
       SERVER_PORT: "8081"
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${DATABASE}
       SPRING_DATASOURCE_USERNAME: ${DATABASE_USERNAME}

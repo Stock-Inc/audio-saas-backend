@@ -17,6 +17,17 @@ spring:
     enabled: true
     change-log: db/changelog/changelog-master.xml
 
+  servlet:
+    multipart:
+      max-file-size: 1000MB
+      max-request-size: 1100MB
+
+audio:
+  processor:
+    url: ${AUDIO_PROCESSOR_URL}
+    connect-timeout: 5s
+    read-timeout: 120s
+
 server:
   port: 8081
 
