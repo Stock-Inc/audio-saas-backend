@@ -26,6 +26,9 @@ public class AudioUpload {
     @Column(name = "record_id")
     private UUID recordId;
 
+    @Column(name = "callback_url", length = 2048)
+    private String callbackUrl;
+
     @Column(name = "original_filename", nullable = false, length = 255)
     private String originalFilename;
 

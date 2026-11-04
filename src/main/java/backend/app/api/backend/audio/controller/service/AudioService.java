@@ -15,6 +15,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.net.URI;
 import java.util.UUID;
 
 @Slf4j
@@ -57,6 +58,8 @@ public class AudioService {
             );
         }
 
+        validateCallbackUrl(metadata.callbackUrl());
+
         String filename = file.getOriginalFilename();
 
         if (filename == null || filename.isBlank()) {
@@ -78,6 +81,20 @@ public class AudioService {
         MediaType mediaType = parseMediaType(file.getContentType());
 
         return new ValidatedFile(filename, mediaType);
+    }
+
+    private void validateCallbackUrl(URI callbackUrl) {
+        if (callbackUrl == null
+                || !callbackUrl.isAbsolute()
+                || callbackUrl.getHost() == null
+                || !("http".equalsIgnoreCase(callbackUrl.getScheme())
+                || "https".equalsIgnoreCase(callbackUrl.getScheme()))
+                || callbackUrl.toString().length() > 2048) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Callback URL must be an absolute HTTP or HTTPS URL"
+            );
+        }
     }
 
     private MediaType parseMediaType(String contentType) {
@@ -114,6 +131,7 @@ public class AudioService {
                 .id(UUID.randomUUID())
                 .requestId(metadata.requestId())
                 .recordId(metadata.recordId())
+                .callbackUrl(metadata.callbackUrl().toString())
                 .originalFilename(validated.filename())
                 .contentType(validated.mediaType().toString())
                 .sizeBytes(file.getSize())
@@ -129,12 +147,12 @@ public class AudioService {
             ValidatedFile validated
     ) {
         try {
-//            processorClient.forward(
-//                    metadata,
-//                    file,
-//                    validated.filename(),
-//                    validated.mediaType()
-//            );
+            processorClient.forward(
+                    metadata,
+                    file,
+                    validated.filename(),
+                    validated.mediaType()
+            );
 
             audio.markForwarded();
             repository.save(audio);

@@ -13,4 +13,6 @@
 
     <include file="db/changelog/changes/002-add-audio-processing-ids.xml"/>
 
+    <include file="db/changelog/changes/003-add-audio-callback-url.xml"/>
+
 </databaseChangeLog>
