@@ -291,6 +291,11 @@
 
 
     <repositories>
+        <!-- Keep Maven Central first so only Confluent artifacts fall through to the slower repository. -->
+        <repository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </repository>
         <repository>
             <id>confluent</id>
             <url>https://packages.confluent.io/maven/</url>
