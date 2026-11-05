@@ -132,6 +132,103 @@ Endpoint не запускает OAuth2-flow автоматически:
 
 Email является обязательным полем регистрации, но при текущем `verifyEmail=false` backend не может считать его подтверждённым.
 
+## Загрузка аудиофайла
+
+Авторизованный пользователь может отправить аудиофайл на обработку:
+
+```text
+POST http://localhost:8081/api/v1/audio
+Content-Type: multipart/form-data
+```
+
+Endpoint использует backend-сессию, поэтому браузер должен отправлять session cookie. Тело запроса содержит четыре multipart-поля:
+
+| Поле | Тип | Описание |
+| --- | --- | --- |
+| `requestId` | UUID | Идентификатор запроса во внешней системе |
+| `recordId` | UUID | Идентификатор аудиозаписи во внешней системе |
+| `file` | binary | Загружаемый аудиофайл |
+| `options` | JSON object | Параметры обработки аудио; part должен иметь `Content-Type: application/json` |
+
+Пример запроса через `curl` с ранее полученной session cookie:
+
+```bash
+curl --request POST "http://localhost:8081/api/v1/audio" \
+  --cookie "JSESSIONID=<session-id>" \
+  --form "requestId=3e983854-c2ba-4d12-af8b-a8e2086c1370" \
+  --form "recordId=a96725b4-df5e-41bb-92c3-3ec3786f8621" \
+  --form "file=@./voice.mp3;type=audio/mpeg" \
+  --form 'options={"diarization":true,"summary":true,"tasks":true};type=application/json'
+```
+
+Пример отправки с frontend:
+
+```javascript
+async function uploadAudio(file) {
+  const formData = new FormData();
+  formData.append(
+    "requestId",
+    "3e983854-c2ba-4d12-af8b-a8e2086c1370"
+  );
+  formData.append(
+    "recordId",
+    "a96725b4-df5e-41bb-92c3-3ec3786f8621"
+  );
+  formData.append("file", file);
+  formData.append(
+    "options",
+    new Blob(
+      [JSON.stringify({
+        diarization: true,
+        summary: true,
+        tasks: true
+      })],
+      { type: "application/json" }
+    )
+  );
+  const response = await fetch(
+    "http://localhost:8081/api/v1/audio",
+    {
+      method: "POST",
+      credentials: "include",
+      body: formData
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Не удалось загрузить файл: ${response.status}`);
+  }
+
+  return response.json();
+}
+```
+
+Не нужно вручную задавать общий заголовок `Content-Type` при использовании `FormData`: браузер сам добавляет корректный multipart boundary.
+
+Успешный запрос возвращает `202 Accepted`:
+
+```json
+{
+  "id": "7747f2c4-c6c0-4b48-9e80-724bb8a85938",
+  "requestId": "3e983854-c2ba-4d12-af8b-a8e2086c1370",
+  "recordId": "a96725b4-df5e-41bb-92c3-3ec3786f8621",
+  "status": "FORWARDED"
+}
+```
+
+Возможные ответы:
+
+| Статус | Значение |
+| --- | --- |
+| `202 Accepted` | Файл принят в обработку |
+| `400 Bad Request` | Файл пуст, UUID некорректен или `options` не является JSON-объектом |
+| `401 Unauthorized` / redirect | Backend-сессия отсутствует; необходимо пройти OAuth2-вход |
+| `413 Payload Too Large` | Превышен лимит файла `1000MB` или всего запроса `1100MB` |
+| `415 Unsupported Media Type` | Некорректный Content-Type файла или multipart-запроса |
+| `502 Bad Gateway` | Сервис обработки аудио недоступен |
+
+Интерактивная документация доступна по адресу `http://localhost:8081/swagger-ui.html`.
+
 ## Где хранятся данные
 
 | Компонент | Данные |
@@ -206,6 +303,7 @@ fetch("http://localhost:8081/api/v1/auth/me", {
 | Открыть регистрацию | Тот же OAuth2 endpoint, затем ссылка регистрации в Keycloak | Реализовано |
 | OAuth2 callback | `GET /login/oauth2/code/keycloak` | Вызывается Keycloak, не frontend |
 | Проверить сессию / получить пользователя | `GET /api/v1/auth/me` | `200` с пользователем или `401`, без OAuth2-редиректа |
+| Загрузить аудиофайл | `POST /api/v1/audio` | `202` с идентификатором и статусом загрузки; требуется backend-сессия |
 | Открыть регистрацию напрямую | `GET /api/v1/auth/register` | Не реализовано |
 | Вернуться после входа на страницу SPA | Например, `/auth/callback` | Не реализовано |
 | Явно завершить frontend/Keycloak-сессию | Отдельный logout-flow | Не настроено |
