@@ -103,13 +103,13 @@ class AudioControllerTests {
     }
 
     @Test
-    void uploadWithoutSessionStartsAuthentication() throws Exception {
+    void uploadWithoutAuthenticationReturnsUnauthorized() throws Exception {
         mockMvc.perform(multipart("/api/v1/audio")
                         .file(audioFile())
                         .file(optionsPart("{}"))
                         .param("requestId", REQUEST_ID.toString())
                         .param("recordId", RECORD_ID.toString()))
-                .andExpect(status().is3xxRedirection());
+                .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(audioService);
     }
