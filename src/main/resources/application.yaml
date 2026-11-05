@@ -22,6 +22,13 @@ spring:
       max-file-size: 1000MB
       max-request-size: 1100MB
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9090/realms/demo
+          jwk-set-uri: http://keycloak:8080/realms/demo/protocol/openid-connect/certs
+
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     properties:
