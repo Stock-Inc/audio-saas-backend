@@ -141,7 +141,7 @@ POST http://localhost:8081/api/v1/audio
 Content-Type: multipart/form-data
 ```
 
-Endpoint использует backend-сессию, поэтому браузер должен отправлять session cookie. Тело запроса содержит пять multipart-полей:
+Endpoint использует backend-сессию, поэтому браузер должен отправлять session cookie. Тело запроса содержит четыре multipart-поля:
 
 | Поле | Тип | Описание |
 | --- | --- | --- |
@@ -149,7 +149,6 @@ Endpoint использует backend-сессию, поэтому браузе�
 | `recordId` | UUID | Идентификатор аудиозаписи во внешней системе |
 | `file` | binary | Загружаемый аудиофайл |
 | `options` | JSON object | Параметры обработки аудио; part должен иметь `Content-Type: application/json` |
-| `callbackUrl` | absolute HTTP(S) URL | Адрес backend, на который ML-сервис отправит результат обработки |
 
 Пример запроса через `curl` с ранее полученной session cookie:
 
@@ -159,8 +158,7 @@ curl --request POST "http://localhost:8081/api/v1/audio" \
   --form "requestId=3e983854-c2ba-4d12-af8b-a8e2086c1370" \
   --form "recordId=a96725b4-df5e-41bb-92c3-3ec3786f8621" \
   --form "file=@./voice.mp3;type=audio/mpeg" \
-  --form 'options={"diarization":true,"summary":true,"tasks":true};type=application/json' \
-  --form "callbackUrl=https://backend/api/v1/internal/ml/callback"
+  --form 'options={"diarization":true,"summary":true,"tasks":true};type=application/json'
 ```
 
 Пример отправки с frontend:
@@ -188,11 +186,6 @@ async function uploadAudio(file) {
       { type: "application/json" }
     )
   );
-  formData.append(
-    "callbackUrl",
-    "https://backend/api/v1/internal/ml/callback"
-  );
-
   const response = await fetch(
     "http://localhost:8081/api/v1/audio",
     {
@@ -228,7 +221,7 @@ async function uploadAudio(file) {
 | Статус | Значение |
 | --- | --- |
 | `202 Accepted` | Файл принят в обработку |
-| `400 Bad Request` | Файл пуст, UUID некорректен, `options` не является JSON-объектом или `callbackUrl` не является абсолютным HTTP(S) URL |
+| `400 Bad Request` | Файл пуст, UUID некорректен или `options` не является JSON-объектом |
 | `401 Unauthorized` / redirect | Backend-сессия отсутствует; необходимо пройти OAuth2-вход |
 | `413 Payload Too Large` | Превышен лимит файла `1000MB` или всего запроса `1100MB` |
 | `415 Unsupported Media Type` | Некорректный Content-Type файла или multipart-запроса |

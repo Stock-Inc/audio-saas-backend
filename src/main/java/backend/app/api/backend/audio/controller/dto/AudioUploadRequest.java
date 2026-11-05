@@ -3,7 +3,6 @@ package backend.app.api.backend.audio.controller.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
 
@@ -36,13 +35,6 @@ public record AudioUploadRequest(
                 example = "{\"diarization\":true,\"summary\":true,\"tasks\":true}",
                 requiredMode = Schema.RequiredMode.REQUIRED
         )
-        Map<String, Object> options,
-
-        @Schema(
-                description = "URL backend, на который ML-сервис отправит результат обработки",
-                example = "https://backend/api/v1/internal/ml/callback",
-                requiredMode = Schema.RequiredMode.REQUIRED
-        )
-        URI callbackUrl
+        Map<String, Object> options
 ) {
 }

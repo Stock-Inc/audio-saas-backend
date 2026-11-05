@@ -24,7 +24,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 class AudioProcessorClientTests {
 
     @Test
-    void forwardIncludesCallbackUrlInMultipartRequest() throws Exception {
+    void forwardIncludesMetadataInMultipartRequest() throws Exception {
         URI processorUrl = URI.create("http://audio-processor/process");
         RestClient.Builder restClientBuilder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer
@@ -39,16 +39,12 @@ class AudioProcessorClientTests {
                 restClientBuilder.build(),
                 properties
         );
-        var callbackUrl = URI.create(
-                "https://backend/api/v1/internal/ml/callback"
-        );
         var metadata = new AudioProcessingMetadata(
                 UUID.fromString("3e983854-c2ba-4d12-af8b-a8e2086c1370"),
                 UUID.fromString("a96725b4-df5e-41bb-92c3-3ec3786f8621"),
                 JsonMapper.builder().build().readTree("""
                         {"diarization":true,"summary":true,"tasks":true}
-                        """),
-                callbackUrl
+                        """)
         );
         var file = new MockMultipartFile(
                 "file",
@@ -63,10 +59,13 @@ class AudioProcessorClientTests {
                         MediaType.MULTIPART_FORM_DATA
                 ))
                 .andExpect(content().string(containsString(
-                        "name=\"callbackUrl\""
+                        "name=\"requestId\""
                 )))
                 .andExpect(content().string(containsString(
-                        callbackUrl.toString()
+                        "name=\"recordId\""
+                )))
+                .andExpect(content().string(containsString(
+                        "name=\"options\""
                 )))
                 .andRespond(withNoContent());
 

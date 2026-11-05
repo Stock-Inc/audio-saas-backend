@@ -36,8 +36,6 @@ public class AudioProcessorClient {
         body.part("options", metadata.options())
                 .contentType(MediaType.APPLICATION_JSON);
 
-        body.part("callbackUrl", metadata.callbackUrl().toString());
-
         audioProcessorRestClient.post()
                 .uri(properties.url())
                 .contentType(MediaType.MULTIPART_FORM_DATA)

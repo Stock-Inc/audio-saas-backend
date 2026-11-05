@@ -19,7 +19,6 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
@@ -41,9 +40,6 @@ class AudioServiceTests {
     );
     private static final UUID RECORD_ID = UUID.fromString(
             "a96725b4-df5e-41bb-92c3-3ec3786f8621"
-    );
-    private static final URI CALLBACK_URL = URI.create(
-            "https://backend/api/v1/internal/ml/callback"
     );
     private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
 
@@ -79,7 +75,6 @@ class AudioServiceTests {
         assertEquals(response.id(), savedAudio.getId());
         assertEquals(REQUEST_ID, savedAudio.getRequestId());
         assertEquals(RECORD_ID, savedAudio.getRecordId());
-        assertEquals(CALLBACK_URL.toString(), savedAudio.getCallbackUrl());
         assertEquals("voice.mp3", savedAudio.getOriginalFilename());
         assertEquals("audio/mpeg", savedAudio.getContentType());
         assertEquals(file.getSize(), savedAudio.getSizeBytes());
@@ -193,58 +188,6 @@ class AudioServiceTests {
     }
 
     @Test
-    void uploadRejectsRelativeCallbackUrl() throws Exception {
-        var file = new MockMultipartFile(
-                "file",
-                "voice.mp3",
-                "audio/mpeg",
-                "audio-content".getBytes(StandardCharsets.UTF_8)
-        );
-        var metadata = new AudioProcessingMetadata(
-                REQUEST_ID,
-                RECORD_ID,
-                JSON_MAPPER.readTree("{}"),
-                URI.create("/api/v1/internal/ml/callback")
-        );
-
-        ResponseStatusException exception = assertThrows(
-                ResponseStatusException.class,
-                () -> audioService.upload(metadata, file)
-        );
-
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
-        assertEquals(
-                "Callback URL must be an absolute HTTP or HTTPS URL",
-                exception.getReason()
-        );
-        verify(repository, never()).save(any());
-    }
-
-    @Test
-    void uploadRejectsNonHttpCallbackUrl() throws Exception {
-        var file = new MockMultipartFile(
-                "file",
-                "voice.mp3",
-                "audio/mpeg",
-                "audio-content".getBytes(StandardCharsets.UTF_8)
-        );
-        var metadata = new AudioProcessingMetadata(
-                REQUEST_ID,
-                RECORD_ID,
-                JSON_MAPPER.readTree("{}"),
-                URI.create("ftp://backend/result")
-        );
-
-        ResponseStatusException exception = assertThrows(
-                ResponseStatusException.class,
-                () -> audioService.upload(metadata, file)
-        );
-
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
-        verify(repository, never()).save(any());
-    }
-
-    @Test
     void uploadMarksRecordFailedWhenProcessorIsUnavailable()
             throws Exception {
         returnSavedEntity();
@@ -285,8 +228,7 @@ class AudioServiceTests {
         return new AudioProcessingMetadata(
                 REQUEST_ID,
                 RECORD_ID,
-                JSON_MAPPER.readTree(json),
-                CALLBACK_URL
+                JSON_MAPPER.readTree(json)
         );
     }
 

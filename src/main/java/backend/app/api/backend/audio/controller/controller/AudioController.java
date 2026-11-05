@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import tools.jackson.databind.JsonNode;
 
-import java.net.URI;
 import java.util.UUID;
 
 @RestController
@@ -37,7 +36,7 @@ public class AudioController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(
             summary = "Загрузить аудиофайл",
-            description = "Принимает аудиофайл, параметры обработки и callback URL в формате multipart/form-data. "
+            description = "Принимает аудиофайл и параметры обработки в формате multipart/form-data. "
                     + "После проверки сохраняет сведения о загрузке и передаёт данные сервису обработки.",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     required = true,
@@ -72,7 +71,7 @@ public class AudioController {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Некорректный файл, UUID, options или callbackUrl",
+                    description = "Некорректный файл, UUID или options",
                     content = @Content
             ),
             @ApiResponse(
@@ -107,16 +106,12 @@ public class AudioController {
             @RequestPart("file") MultipartFile file,
 
             @Parameter(hidden = true)
-            @RequestPart("options") JsonNode options,
-
-            @Parameter(hidden = true)
-            @RequestParam("callbackUrl") URI callbackUrl
+            @RequestPart("options") JsonNode options
     ) {
         AudioProcessingMetadata metadata = new AudioProcessingMetadata(
                 requestId,
                 recordId,
-                options,
-                callbackUrl
+                options
         );
 
         return ResponseEntity
