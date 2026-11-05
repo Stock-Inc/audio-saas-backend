@@ -22,6 +22,12 @@ spring:
       max-file-size: 1000MB
       max-request-size: 1100MB
 
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    properties:
+      schema.registry.url: ${SPRING_KAFKA_PROPERTIES_SCHEMA_REGISTRY_URL:http://localhost:8085}
+
+
 audio:
   processor:
     url: ${AUDIO_PROCESSOR_URL}

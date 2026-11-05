@@ -1,0 +1,7 @@
+{
+  "type": "record",
+  "name": "PlaceholderEvent",
+  "namespace": "backend.app.api.kafka.avro",
+  "doc": "Temporary placeholder schema. Remove it when the first real Kafka event schema is added.",
+  "fields": []
+}
