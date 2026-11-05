@@ -1,0 +1,61 @@
+name: Sync files to audio-saas
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - compose.yaml
+      - .env.example
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-audio-saas-files
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout audio-saas-backend
+        uses: actions/checkout@v7
+        with:
+          path: backend
+          persist-credentials: false
+
+      - name: Checkout audio-saas
+        uses: actions/checkout@v7
+        with:
+          repository: Stock-Inc/audio-saas
+          ref: main
+          token: ${{ secrets.GH_SYNC_TOKEN }}
+          path: audio-saas
+
+      - name: Copy files
+        run: |
+          set -euo pipefail
+          cp backend/compose.yaml audio-saas/compose.yaml
+          cp backend/.env.example audio-saas/.env.example
+
+      - name: Commit and push
+        working-directory: audio-saas
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -- compose.yaml .env.example
+
+          if git diff --cached --quiet; then
+            echo "Files are already synchronized"
+            exit 0
+          fi
+
+          git commit -m "chore: sync compose and env example from backend"
+          git push origin HEAD:main
