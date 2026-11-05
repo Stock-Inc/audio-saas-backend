@@ -1,186 +1,225 @@
-/* Sonora login for Keycloak 25.0.5; inherits the official login.ftl. */
+/* Login and registration screens based on the supplied references. */
 :root {
-  --sn-bg: #0C0A09;
-  --sn-card: #1C1917;
-  --sn-fg: #FFFBEB;
-  --sn-muted: #A6A09B;
-  --sn-accent: #DB762F;
-  --sn-line: rgba(255,255,255,.1);
+  --sn-bg: #0d0b0a;
+  --sn-card: #1c1917;
+  --sn-fg: #f5f0e9;
+  --sn-muted: #928a83;
+  --sn-accent: #dd772e;
+  --sn-line: #332e2a;
 }
 html.login-pf, html.login-pf body {
+  min-height: 100%;
+  margin: 0;
   background: var(--sn-bg) !important;
   background-image: none !important;
-  min-height: 100%;
   color: var(--sn-fg);
   font-family: "IBM Plex Mono", "Courier New", monospace;
+  font-size: 16px;
 }
-html.login-pf body { margin: 0; min-height: 100vh; }
-.login-pf-page { min-height: 100vh; padding-bottom: 40px; }
-/* Sonora topbar. It uses the built-in kc-header block instead of an FTL override. */
+.login-pf-page { min-height: 100vh; padding: 0; }
 .login-pf-page #kc-header {
-  height: 64px;
-  width: 100%;
-  padding: 0 24px !important;
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  background: var(--sn-card);
-  border: 1px solid var(--sn-line);
-  text-align: left;
-  white-space: normal;
+  width: 100%;
+  height: 64px;
   margin: 0;
+  padding: 0 28px !important;
   float: none;
+  background: var(--sn-card);
+  border-bottom: 1px solid var(--sn-line);
+  text-align: left;
 }
 .login-pf-page #kc-header-wrapper {
-  padding: 0 !important;
-  margin: 0;
-  font-size: 0;
-  line-height: 1;
-  letter-spacing: 0;
-  text-transform: none;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
+  margin: 0;
+  padding: 0 !important;
+  background: transparent !important;
+  background-image: none !important;
+  font-size: 0;
+  line-height: 1;
 }
 .login-pf-page #kc-header-wrapper::before {
   content: "";
-  display: inline-block;
-  width: 24px;
-  height: 24px;
-  flex: none;
+  width: 18px;
+  height: 18px;
   background: url('../img/waveform.svg') center / contain no-repeat;
 }
 .login-pf-page #kc-header-wrapper::after {
-  content: "sonora";
-  font-family: Newsreader, Georgia, serif;
-  font-size: 24px;
-  font-weight: 400;
+  content: "SaaS";
+  font: 400 26px/1 Georgia, serif;
   color: var(--sn-fg);
-  line-height: 1.1;
+  text-transform: none;
 }
-/* Sign-in card */
 .login-pf-page .card-pf {
   box-sizing: border-box;
-  width: min(440px, calc(100% - 32px));
-  max-width: 440px;
-  margin: clamp(65px, 24vh, 232px) auto 0 !important;
-  padding: 32px !important;
-  min-height: 432px;
+  width: min(428px, calc(100% - 32px));
+  max-width: 428px;
+  min-height: 0;
+  margin: clamp(64px, 24vh, 232px) auto 0 !important;
+  padding: 29px 31px 27px !important;
   background: var(--sn-card) !important;
   color: var(--sn-fg);
   border: 1px solid var(--sn-line) !important;
   border-radius: 0 !important;
   box-shadow: none !important;
 }
+.login-pf-page .card-pf:has(#kc-register-form) {
+  margin-top: clamp(48px, 18vh, 178px) !important;
+}
+.login-pf-page .login-pf-header { margin: 0; }
 .login-pf-page #kc-page-title {
-  margin: 0 0 8px !important;
-  font: 400 36px/1.05 Newsreader, Georgia, serif;
+  margin: 0 0 35px !important;
   color: var(--sn-fg) !important;
+  font: 400 32px/1.15 Arial, sans-serif;
   text-align: left;
 }
 .login-pf-page #kc-page-title::after {
-  content: "Войдите в аккаунт, чтобы продолжить";
+  content: "Войдите, чтобы продолжить работу с записями.";
   display: block;
-  margin-top: 8px;
-  margin-bottom: 24px;
-  font: 400 11px/1.5 "IBM Plex Mono", "Courier New", monospace;
+  margin-top: 11px;
   color: var(--sn-muted);
+  font: 400 12px/1.5 "IBM Plex Mono", "Courier New", monospace;
 }
-.login-pf-page #kc-content-wrapper,
-.login-pf-page #kc-form-wrapper,
-.login-pf-page #kc-content { margin: 0 !important; padding: 0 !important; }
-.login-pf-page form#kc-form-login .form-group {
-  margin-bottom: 16px;
+.login-pf-page .card-pf:has(#kc-register-form) #kc-page-title::after {
+  content: "Начните превращать аудио в текст и сводки.";
 }
-.login-pf-page #kc-form-login label.pf-c-form__label,
-.login-pf-page #kc-form-login .pf-c-form__label-text {
+.login-pf-page #kc-content, .login-pf-page #kc-content-wrapper,
+.login-pf-page #kc-form, .login-pf-page #kc-form-wrapper {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.login-pf-page .form-group { margin-bottom: 16px; }
+.login-pf-page .form-group > [class*="col-"] { width: 100%; float: none; padding: 0; }
+.login-pf-page form label.pf-c-form__label,
+.login-pf-page form .pf-c-form__label-text,
+.login-pf-page .sn-field-label {
   display: block;
-  font: 500 9px/1.3 "IBM Plex Mono", "Courier New", monospace;
-  letter-spacing: .06em;
+  margin: 0 0 7px;
   color: var(--sn-muted) !important;
-  margin: 0 0 8px;
+  font: 500 11px/1.3 "IBM Plex Mono", "Courier New", monospace;
+  letter-spacing: .08em;
+  text-transform: uppercase;
 }
-.login-pf-page #kc-form-login input.pf-c-form-control {
-  width: 100%;
-  height: 40px;
+.login-pf-page input.pf-c-form-control {
   box-sizing: border-box;
+  width: 100%;
+  height: 39px;
   padding: 0 12px;
-  border: 1px solid rgba(255,255,255,.15) !important;
-  border-radius: 0 !important;
-  color: var(--sn-fg) !important;
   background: var(--sn-card) !important;
+  color: var(--sn-fg) !important;
+  border: 1px solid #3a3430 !important;
+  border-radius: 0 !important;
   box-shadow: none !important;
-  font: 400 13px/20px "IBM Plex Mono", "Courier New", monospace;
+  font: 400 14px/20px "IBM Plex Mono", "Courier New", monospace;
 }
-.login-pf-page #kc-form-login input.pf-c-form-control::placeholder { color: var(--sn-muted); }
-.login-pf-page #kc-form-login .pf-c-input-group { display: flex; }
-.login-pf-page #kc-form-login .pf-c-input-group input { flex: 1; min-width: 0; }
-.login-pf-page #kc-form-login .pf-c-input-group button {
-  border: 1px solid rgba(255,255,255,.15);
+.login-pf-page input.pf-c-form-control::placeholder { color: #817a74; opacity: 1; }
+.login-pf-page .pf-c-input-group { display: flex; }
+.login-pf-page .pf-c-input-group input { flex: 1; min-width: 0; }
+.login-pf-page .pf-c-input-group button[data-password-toggle] {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex: 0 0 38px;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 39px;
+  margin: 0;
+  padding: 0 !important;
+  border: 1px solid #3a3430;
   border-left: 0;
   border-radius: 0;
   color: var(--sn-muted);
   background: var(--sn-card);
+  line-height: 1;
 }
-.login-pf-page #kc-form-login .login-pf-settings {
+.login-pf-page .pf-c-input-group button[data-password-toggle] i {
+  display: block;
+  margin: 0;
+  line-height: 1;
+}
+.login-pf-page .login-pf-settings {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
   gap: 10px;
-  margin-top: 8px;
-  margin-bottom: 22px;
+  margin: 20px 0 22px;
 }
-.login-pf-page #kc-form-options .checkbox { margin: 0; color: var(--sn-fg); }
-.login-pf-page #kc-form-options .checkbox label {
+.login-pf-page #kc-form-options .checkbox { margin: 0; }
+.login-pf-page #kc-form-options .checkbox label,
+.login-pf-page .sn-consent {
   display: inline-flex;
-  gap: 8px;
   align-items: center;
-  color: var(--sn-fg) !important;
-  font: 400 10px/1.4 "IBM Plex Mono", monospace;
+  gap: 8px;
+  margin: 0;
+  color: var(--sn-muted) !important;
+  font: 400 12px/1.4 "IBM Plex Mono", "Courier New", monospace;
+  text-transform: none;
+  letter-spacing: 0;
 }
-.login-pf-page #kc-form-options input[type="checkbox"] { accent-color: var(--sn-accent); }
+.login-pf-page #kc-form-options .checkbox label {
+  min-height: 0;
+  padding-left: 0 !important;
+}
+.login-pf-page #kc-form-options .checkbox input[type="checkbox"],
+.login-pf-page .sn-consent input[type="checkbox"] {
+  position: static !important;
+  float: none !important;
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+  margin: 0 !important;
+  accent-color: var(--sn-accent);
+}
 .login-pf-page a { color: var(--sn-accent) !important; text-decoration: none; }
 .login-pf-page a:hover { text-decoration: underline; }
-.login-pf-page .kcFormOptionsWrapperClass,
-.login-pf-page .login-pf-settings a,
-.login-pf-page #kc-registration a { font-size: 10px; }
-.login-pf-page #kc-form-buttons { margin: 0 0 15px; }
-.login-pf-page input#kc-login {
+.login-pf-page .login-pf-settings a { font-size: 12px; }
+.login-pf-page #kc-form-buttons { margin: 0; padding: 0; }
+.login-pf-page #kc-login, .login-pf-page #kc-register {
   width: 100%;
-  height: 40px;
+  height: 39px;
+  padding: 0 10px;
   background: var(--sn-accent) !important;
   color: var(--sn-fg) !important;
-  border: none !important;
+  border: 0 !important;
   border-radius: 0 !important;
   box-shadow: none !important;
-  font: 500 13px/20px "IBM Plex Mono", monospace;
+  font: 500 14px/20px "IBM Plex Mono", "Courier New", monospace;
   cursor: pointer;
 }
-.login-pf-page input#kc-login:hover { background: #e78a43 !important; }
-.login-pf-page input:focus-visible,
-.login-pf-page button:focus-visible,
-.login-pf-page a:focus-visible { outline: 2px solid var(--sn-accent); outline-offset: 2px; }
+.login-pf-page #kc-login:hover, .login-pf-page #kc-register:hover {
+  background: #e78a43 !important;
+}
+.login-pf-page input:focus-visible, .login-pf-page button:focus-visible,
+.login-pf-page a:focus-visible {
+  outline: 2px solid var(--sn-accent);
+  outline-offset: 2px;
+}
 .login-pf-page #kc-info { margin: 18px 0 0 !important; }
-.login-pf-page #kc-info-wrapper {
+.login-pf-page #kc-info-wrapper, .login-pf-page .sn-form-footer {
   padding: 0 !important;
   background: transparent !important;
+  color: var(--sn-muted);
+  font: 400 12px/1.5 "IBM Plex Mono", "Courier New", monospace;
   text-align: center;
-  font-size: 10px;
-  color: #79716B;
 }
-.login-pf-page .alert-error,
-.login-pf-page .alert-warning,
-.login-pf-page .pf-c-alert { background: #29201c; color: var(--sn-fg); border: 1px solid #b85b3c; }
+.login-pf-page .sn-consent-row { margin: 22px 0 38px; }
+.login-pf-page .sn-form-footer { margin-top: 18px; }
+.login-pf-page .alert-error, .login-pf-page .alert-warning,
+.login-pf-page .pf-c-alert {
+  background: #29201c;
+  color: var(--sn-fg);
+  border: 1px solid #b85b3c;
+  margin-bottom: 12px;
+}
 .login-pf-page .pf-c-form__helper-text.pf-m-error { color: #ffafa1; }
-.login-pf-page #kc-locale-dropdown button { color: var(--sn-muted); }
-@media(max-width: 600px) {
+@media (max-width: 600px) {
   .login-pf-page #kc-header { padding: 0 18px !important; }
-  .login-pf-page .card-pf { margin: 48px auto 0 !important; padding: 28px 22px !important; min-height: 0; }
-  .login-pf-page #kc-page-title { font-size: 32px; }
-}
-
-.login-pf-page #kc-header-wrapper {
-  background-image: none !important;
-  background: transparent !important;
+  .login-pf-page .card-pf, .login-pf-page .card-pf:has(#kc-register-form) {
+    margin: 48px auto 0 !important;
+    padding: 27px 22px !important;
+  }
+  .login-pf-page #kc-page-title { font-size: 33px; }
 }
