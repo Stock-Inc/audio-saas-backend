@@ -26,7 +26,8 @@ pipeline {
         stage('Tests') {
             steps {
                 sh '''
-            docker build \
+            docker buildx build \
+                --load \
                 --target build \
                 -t audio-saas-backend-tests:dev \
                 .
@@ -44,7 +45,8 @@ pipeline {
 
             steps {
                 sh '''
-                    docker build \
+                    docker buildx build \
+                        --load \
                         -t "$BACKEND_IMAGE:$IMAGE_TAG" \
                         .
                 '''
@@ -61,7 +63,8 @@ pipeline {
 
             steps {
                 sh '''
-                    docker build \
+                    docker buildx build \
+                        --load \
                         -f Dockerfile.keycloak \
                         -t "$KEYCLOAK_IMAGE:$IMAGE_TAG" \
                         .
