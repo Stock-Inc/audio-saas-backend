@@ -3,6 +3,7 @@ package backend.app.api.backend.audio.controller.client;
 
 import backend.app.api.backend.audio.controller.config.AudioProcessorProperties;
 import backend.app.api.backend.audio.controller.dto.AudioProcessingMetadata;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,7 @@ public class AudioProcessorClient {
     private final AudioProcessorProperties properties;
 
     @Retry(name = "audioProcessor")
+    @CircuitBreaker(name = "audioProcessor")
     public void forward(
             AudioProcessingMetadata metadata,
             MultipartFile file,
