@@ -209,11 +209,59 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
       - loki
+  postgres-ml:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${ML_POSTGRES_DB}
+      POSTGRES_USER: ${ML_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${ML_POSTGRES_PASSWORD}
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -h localhost -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  backend-ml:
+    image: ghcr.io/stock-inc/audio-saas-ml:dev
+    pull_policy: always
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8084:8084"
+    environment:
+      SERVER_PORT: "8084"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-ml:5432/${ML_POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${ML_POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${ML_POSTGRES_PASSWORD}
+      SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: 100MB
+      SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: 101MB
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      SPRING_KAFKA_PROPERTIES_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      ML_WHISPER_URL: ${ML_WHISPER_URL:-http://host.docker.internal:8000}
+      ML_WHISPER_READ_TIMEOUT: ${ML_WHISPER_READ_TIMEOUT:-30m}
+      ML_WHISPER_CONNECT_TIMEOUT: ${ML_WHISPER_CONNECT_TIMEOUT:-10s}
+      ML_KAFKA_TOPIC_JOB_RESULTS: ${ML_KAFKA_TOPIC_JOB_RESULTS:-ml-job-results}
+      ML_PROCESSING_MOCK_ENABLED: ${ML_PROCESSING_MOCK_ENABLED:-false}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres-ml:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
 
 volumes:
   postgres_data:
   keycloak_db_data:
   kafka_data:
+  pg_data:
   prometheus_data:
   grafana_data:
   loki_data:
