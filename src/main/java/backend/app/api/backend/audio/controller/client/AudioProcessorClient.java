@@ -29,9 +29,6 @@ public class AudioProcessorClient {
     ) {
         MultipartBodyBuilder body = new MultipartBodyBuilder();
 
-        body.part("requestId", metadata.requestId().toString());
-        body.part("recordId", metadata.recordId().toString());
-
         body.part("file", file.getResource())
                 .filename(filename)
                 .contentType(mediaType);
@@ -39,11 +36,7 @@ public class AudioProcessorClient {
         body.part("options", metadata.options())
                 .contentType(MediaType.APPLICATION_JSON);
 
-        log.debug(
-                "Forwarding audio to processor: requestId={}, recordId={}",
-                metadata.requestId(),
-                metadata.recordId()
-        );
+        log.debug("Forwarding audio to processor");
 
         var response = audioProcessorRestClient.post()
                 .uri(properties.url())
@@ -53,8 +46,7 @@ public class AudioProcessorClient {
                 .toBodilessEntity();
 
         log.debug(
-                "Audio processor responded: requestId={}, status={}",
-                metadata.requestId(),
+                "Audio processor responded: status={}",
                 response.getStatusCode()
         );
     }

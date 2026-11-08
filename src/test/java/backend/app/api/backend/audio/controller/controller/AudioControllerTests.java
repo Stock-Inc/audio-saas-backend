@@ -89,13 +89,9 @@ class AudioControllerTests {
                         .file(optionsPart("""
                                 {"diarization":true,"summary":true,"tasks":true}
                                 """))
-                        .param("requestId", REQUEST_ID.toString())
-                        .param("recordId", RECORD_ID.toString())
                         .with(oidcLogin()))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.id").value(uploadId.toString()))
-                .andExpect(jsonPath("$.requestId").value(REQUEST_ID.toString()))
-                .andExpect(jsonPath("$.recordId").value(RECORD_ID.toString()))
                 .andExpect(jsonPath("$.status").value("FORWARDED"));
 
         var metadataCaptor = org.mockito.ArgumentCaptor.forClass(
@@ -109,8 +105,6 @@ class AudioControllerTests {
                 fileCaptor.capture()
         );
 
-        assertEquals(REQUEST_ID, metadataCaptor.getValue().requestId());
-        assertEquals(RECORD_ID, metadataCaptor.getValue().recordId());
         assertTrue(metadataCaptor.getValue().options()
                 .get("diarization").asBoolean());
         assertTrue(metadataCaptor.getValue().options()
@@ -124,9 +118,7 @@ class AudioControllerTests {
     void uploadWithoutAuthenticationReturnsUnauthorized() throws Exception {
         mockMvc.perform(multipart("/api/v1/audio")
                         .file(audioFile())
-                        .file(optionsPart("{}"))
-                        .param("requestId", REQUEST_ID.toString())
-                        .param("recordId", RECORD_ID.toString()))
+                        .file(optionsPart("{}")))
                 .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(audioService);
@@ -137,8 +129,6 @@ class AudioControllerTests {
         mockMvc.perform(multipart("/api/v1/audio")
                         .file(audioFile())
                         .file(optionsPart("not-json"))
-                        .param("requestId", REQUEST_ID.toString())
-                        .param("recordId", RECORD_ID.toString())
                         .with(oidcLogin()))
                 .andExpect(status().isBadRequest());
 
@@ -149,8 +139,6 @@ class AudioControllerTests {
     void uploadWithoutFileReturnsBadRequest() throws Exception {
         mockMvc.perform(multipart("/api/v1/audio")
                         .file(optionsPart("{}"))
-                        .param("requestId", REQUEST_ID.toString())
-                        .param("recordId", RECORD_ID.toString())
                         .with(oidcLogin()))
                 .andExpect(status().isBadRequest());
 
@@ -164,11 +152,11 @@ class AudioControllerTests {
                 .get("AudioUploadRequest");
 
         assertEquals(
-                Set.of("requestId", "recordId", "file", "options"),
+                Set.of("file", "options"),
                 schema.getProperties().keySet()
         );
         assertEquals(
-                Set.of("requestId", "recordId", "file", "options"),
+                Set.of("file", "options"),
                 Set.copyOf(schema.getRequired())
         );
 

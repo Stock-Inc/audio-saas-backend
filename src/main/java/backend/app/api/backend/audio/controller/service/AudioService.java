@@ -30,10 +30,7 @@ public class AudioService {
             MultipartFile file
     ) {
         log.info(
-                "Audio upload started: requestId={}, recordId={}, "
-                        + "sizeBytes={}, contentType={}",
-                metadata.requestId(),
-                metadata.recordId(),
+                "Audio upload started: sizeBytes={}, contentType={}",
                 file.getSize(),
                 file.getContentType()
         );
@@ -44,23 +41,18 @@ public class AudioService {
             validated = validate(metadata, file);
         } catch (ResponseStatusException exception) {
             log.warn(
-                    "Audio upload rejected: requestId={}, recordId={}, "
-                            + "status={}, reason={}",
-                    metadata.requestId(),
-                    metadata.recordId(),
+                    "Audio upload rejected: status={}, reason={}",
                     exception.getStatusCode().value(),
                     exception.getReason()
             );
             throw exception;
         }
 
-        AudioUpload audio = saveUpload(metadata, file, validated);
+        AudioUpload audio = saveUpload(file, validated);
 
         log.info(
-                "Audio upload stored: uploadId={}, requestId={}, recordId={}",
-                audio.getId(),
-                audio.getRequestId(),
-                audio.getRecordId()
+                "Audio upload stored: uploadId={}",
+                audio.getId()
         );
 
         forwardAudio(audio, metadata, file, validated);
@@ -136,14 +128,11 @@ public class AudioService {
     }
 
     private AudioUpload saveUpload(
-            AudioProcessingMetadata metadata,
             MultipartFile file,
             ValidatedFile validated
     ) {
         AudioUpload audio = AudioUpload.builder()
                 .id(UUID.randomUUID())
-                .requestId(metadata.requestId())
-                .recordId(metadata.recordId())
                 .originalFilename(validated.filename())
                 .contentType(validated.mediaType().toString())
                 .sizeBytes(file.getSize())
@@ -170,20 +159,14 @@ public class AudioService {
             repository.save(audio);
 
             log.info(
-                    "Audio upload forwarded: uploadId={}, requestId={}, "
-                            + "recordId={}",
-                    audio.getId(),
-                    audio.getRequestId(),
-                    audio.getRecordId()
+                    "Audio upload forwarded: uploadId={}",
+                    audio.getId()
             );
 
         } catch (RestClientException exception) {
             log.error(
-                    "Audio forwarding failed: uploadId={}, requestId={}, "
-                            + "recordId={}",
+                    "Audio forwarding failed: uploadId={}",
                     audio.getId(),
-                    audio.getRequestId(),
-                    audio.getRecordId(),
                     exception
             );
 

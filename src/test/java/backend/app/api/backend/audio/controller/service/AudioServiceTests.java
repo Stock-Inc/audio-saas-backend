@@ -20,8 +20,6 @@ import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.charset.StandardCharsets;
-import java.util.UUID;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -35,12 +33,6 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class AudioServiceTests {
 
-    private static final UUID REQUEST_ID = UUID.fromString(
-            "3e983854-c2ba-4d12-af8b-a8e2086c1370"
-    );
-    private static final UUID RECORD_ID = UUID.fromString(
-            "a96725b4-df5e-41bb-92c3-3ec3786f8621"
-    );
     private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
 
     @Mock
@@ -73,8 +65,6 @@ class AudioServiceTests {
 
         assertNotNull(response.id());
         assertEquals(response.id(), savedAudio.getId());
-        assertEquals(REQUEST_ID, savedAudio.getRequestId());
-        assertEquals(RECORD_ID, savedAudio.getRecordId());
         assertEquals("voice.mp3", savedAudio.getOriginalFilename());
         assertEquals("audio/mpeg", savedAudio.getContentType());
         assertEquals(file.getSize(), savedAudio.getSizeBytes());
@@ -226,8 +216,6 @@ class AudioServiceTests {
 
     private AudioProcessingMetadata metadata(String json) throws Exception {
         return new AudioProcessingMetadata(
-                REQUEST_ID,
-                RECORD_ID,
                 JSON_MAPPER.readTree(json)
         );
     }

@@ -13,9 +13,8 @@ import tools.jackson.databind.json.JsonMapper;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.UUID;
-
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -24,7 +23,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 class AudioProcessorClientTests {
 
     @Test
-    void forwardIncludesMetadataInMultipartRequest() throws Exception {
+    void forwardIncludesFileAndOptionsInMultipartRequest() throws Exception {
         URI processorUrl = URI.create("http://audio-processor/process");
         RestClient.Builder restClientBuilder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer
@@ -40,8 +39,6 @@ class AudioProcessorClientTests {
                 properties
         );
         var metadata = new AudioProcessingMetadata(
-                UUID.fromString("3e983854-c2ba-4d12-af8b-a8e2086c1370"),
-                UUID.fromString("a96725b4-df5e-41bb-92c3-3ec3786f8621"),
                 JsonMapper.builder().build().readTree("""
                         {"diarization":true,"summary":true,"tasks":true}
                         """)
@@ -59,14 +56,17 @@ class AudioProcessorClientTests {
                         MediaType.MULTIPART_FORM_DATA
                 ))
                 .andExpect(content().string(containsString(
-                        "name=\"requestId\""
-                )))
-                .andExpect(content().string(containsString(
-                        "name=\"recordId\""
-                )))
-                .andExpect(content().string(containsString(
                         "name=\"options\""
                 )))
+                .andExpect(content().string(containsString(
+                        "name=\"file\""
+                )))
+                .andExpect(content().string(not(containsString(
+                        "name=\"requestId\""
+                ))))
+                .andExpect(content().string(not(containsString(
+                        "name=\"recordId\""
+                ))))
                 .andRespond(withNoContent());
 
         client.forward(

@@ -22,8 +22,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import tools.jackson.databind.JsonNode;
 
-import java.util.UUID;
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/audio")
@@ -100,20 +98,12 @@ public class AudioController {
     })
     public ResponseEntity<AudioUploadResponse> upload(
             @Parameter(hidden = true)
-            @RequestParam("requestId") UUID requestId,
-
-            @Parameter(hidden = true)
-            @RequestParam("recordId") UUID recordId,
-
-            @Parameter(hidden = true)
             @RequestPart("file") MultipartFile file,
 
             @Parameter(hidden = true)
             @RequestPart("options") JsonNode options
     ) {
         AudioProcessingMetadata metadata = new AudioProcessingMetadata(
-                requestId,
-                recordId,
                 options
         );
 
