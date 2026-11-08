@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@Slf4j
 @RequestMapping("/api/v1/auth")
 @Tag(
         name = "Авторизация",
@@ -59,8 +61,11 @@ public class AuthController {
             @AuthenticationPrincipal OidcUser user
     ) {
         if (user == null) {
+            log.warn("Current user requested without an OIDC session");
             return ResponseEntity.status(401).build();
         }
+
+        log.debug("Current user requested: subject={}", user.getSubject());
 
         return ResponseEntity.ok(
                 new UserResponse(

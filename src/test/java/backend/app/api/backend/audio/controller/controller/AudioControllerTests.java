@@ -5,10 +5,13 @@ import backend.app.api.backend.audio.controller.dto.AudioUploadRequest;
 import backend.app.api.backend.audio.controller.dto.AudioUploadResponse;
 import backend.app.api.backend.audio.controller.entity.AudioStatus;
 import backend.app.api.backend.audio.controller.service.AudioService;
+import backend.app.api.backend.config.OpenApiConfig;
 import backend.app.api.backend.config.SecurityConfig;
 import io.swagger.v3.core.converter.ModelConverters;
+import io.swagger.v3.oas.models.media.Schema;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -17,6 +20,12 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.multipart.MultipartFile;
+import org.springdoc.core.configuration.SpringDocConfiguration;
+import org.springdoc.core.properties.SpringDocConfigProperties;
+import org.springdoc.core.properties.SwaggerUiConfigProperties;
+import org.springdoc.core.properties.SwaggerUiOAuthProperties;
+import org.springdoc.webmvc.core.configuration.SpringDocWebMvcConfiguration;
+import org.springdoc.webmvc.ui.SwaggerConfig;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
@@ -29,12 +38,21 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AudioController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, OpenApiConfig.class})
+@ImportAutoConfiguration({
+        SpringDocConfiguration.class,
+        SpringDocConfigProperties.class,
+        SpringDocWebMvcConfiguration.class,
+        SwaggerConfig.class,
+        SwaggerUiConfigProperties.class,
+        SwaggerUiOAuthProperties.class
+})
 @TestPropertySource(properties = "KEYCLOAK_CLIENT_SECRET=test-client-secret")
 class AudioControllerTests {
 
@@ -153,6 +171,44 @@ class AudioControllerTests {
                 Set.of("requestId", "recordId", "file", "options"),
                 Set.copyOf(schema.getRequired())
         );
+
+        Schema<?> fileSchema = (Schema<?>) schema.getProperties().get("file");
+        Schema<?> optionsSchema = (Schema<?>) schema.getProperties()
+                .get("options");
+        assertEquals("string", fileSchema.getType());
+        assertEquals("binary", fileSchema.getFormat());
+        assertEquals("object", optionsSchema.getType());
+    }
+
+    @Test
+    void generatedOpenApiDescribesMultipartUploadAndBearerSecurity()
+            throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.info.title")
+                        .value("Sonora Audio SaaS API"))
+                .andExpect(jsonPath(
+                        "$.components.securitySchemes.bearerAuth.type"
+                ).value("http"))
+                .andExpect(jsonPath(
+                        "$.components.securitySchemes.bearerAuth.scheme"
+                ).value("bearer"))
+                .andExpect(jsonPath(
+                        "$.paths['/api/v1/audio'].post.security[0].bearerAuth"
+                ).isArray())
+                .andExpect(jsonPath(
+                        "$.paths['/api/v1/audio'].post.requestBody.required"
+                ).value(true))
+                .andExpect(jsonPath(
+                        "$.paths['/api/v1/audio'].post.requestBody.content"
+                                + "['multipart/form-data'].schema['$ref']"
+                ).value("#/components/schemas/AudioUploadRequest"));
+    }
+
+    @Test
+    void swaggerUiIsAvailableWithoutAuthentication() throws Exception {
+        mockMvc.perform(get("/swagger-ui.html"))
+                .andExpect(status().is3xxRedirection());
     }
 
     private MockMultipartFile audioFile() {

@@ -14,7 +14,8 @@ public class AudioProcessorConfig {
 
     @Bean
     public RestClient audioProcessorRestClient(
-            AudioProcessorProperties properties
+            AudioProcessorProperties properties,
+            RestClient.Builder builder
     ) {
         HttpClient httpClient = HttpClient.newBuilder()
                 .connectTimeout(properties.connectTimeout())
@@ -25,7 +26,7 @@ public class AudioProcessorConfig {
 
         requestFactory.setReadTimeout(properties.readTimeout());
 
-        return RestClient.builder()
+        return builder
                 .requestFactory(requestFactory)
                 .build();
     }

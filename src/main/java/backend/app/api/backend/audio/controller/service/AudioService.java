@@ -29,9 +29,39 @@ public class AudioService {
             AudioProcessingMetadata metadata,
             MultipartFile file
     ) {
-        ValidatedFile validated = validate(metadata, file);
+        log.info(
+                "Audio upload started: requestId={}, recordId={}, "
+                        + "sizeBytes={}, contentType={}",
+                metadata.requestId(),
+                metadata.recordId(),
+                file.getSize(),
+                file.getContentType()
+        );
+
+        ValidatedFile validated;
+
+        try {
+            validated = validate(metadata, file);
+        } catch (ResponseStatusException exception) {
+            log.warn(
+                    "Audio upload rejected: requestId={}, recordId={}, "
+                            + "status={}, reason={}",
+                    metadata.requestId(),
+                    metadata.recordId(),
+                    exception.getStatusCode().value(),
+                    exception.getReason()
+            );
+            throw exception;
+        }
 
         AudioUpload audio = saveUpload(metadata, file, validated);
+
+        log.info(
+                "Audio upload stored: uploadId={}, requestId={}, recordId={}",
+                audio.getId(),
+                audio.getRequestId(),
+                audio.getRecordId()
+        );
 
         forwardAudio(audio, metadata, file, validated);
 
@@ -139,10 +169,21 @@ public class AudioService {
             audio.markForwarded();
             repository.save(audio);
 
+            log.info(
+                    "Audio upload forwarded: uploadId={}, requestId={}, "
+                            + "recordId={}",
+                    audio.getId(),
+                    audio.getRequestId(),
+                    audio.getRecordId()
+            );
+
         } catch (RestClientException exception) {
             log.error(
-                    "Audio forwarding failed: {}",
+                    "Audio forwarding failed: uploadId={}, requestId={}, "
+                            + "recordId={}",
                     audio.getId(),
+                    audio.getRequestId(),
+                    audio.getRecordId(),
                     exception
             );
 

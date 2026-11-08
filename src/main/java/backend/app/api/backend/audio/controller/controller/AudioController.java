@@ -4,6 +4,7 @@ import backend.app.api.backend.audio.controller.dto.AudioProcessingMetadata;
 import backend.app.api.backend.audio.controller.dto.AudioUploadRequest;
 import backend.app.api.backend.audio.controller.dto.AudioUploadResponse;
 import backend.app.api.backend.audio.controller.service.AudioService;
+import backend.app.api.backend.config.OpenApiConfig;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -12,6 +13,7 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -38,6 +40,7 @@ public class AudioController {
             summary = "Загрузить аудиофайл",
             description = "Принимает аудиофайл и параметры обработки в формате multipart/form-data. "
                     + "После проверки сохраняет сведения о загрузке и передаёт данные сервису обработки.",
+            security = @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH),
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     required = true,
                     content = @Content(
