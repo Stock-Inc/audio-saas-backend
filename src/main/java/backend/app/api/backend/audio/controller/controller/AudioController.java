@@ -18,6 +18,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import tools.jackson.databind.JsonNode;
@@ -38,7 +39,10 @@ public class AudioController {
             summary = "Загрузить аудиофайл",
             description = "Принимает аудиофайл и параметры обработки в формате multipart/form-data. "
                     + "После проверки сохраняет сведения о загрузке и передаёт данные сервису обработки.",
-            security = @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH),
+            security = {
+                    @SecurityRequirement(name = OpenApiConfig.SESSION_AUTH),
+                    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+            },
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     required = true,
                     content = @Content(
@@ -72,7 +76,7 @@ public class AudioController {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Некорректный файл, UUID или options",
+                    description = "Некорректный файл или options",
                     content = @Content
             ),
             @ApiResponse(
@@ -94,6 +98,11 @@ public class AudioController {
                     responseCode = "502",
                     description = "Сервис обработки аудио недоступен",
                     content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "503",
+                    description = "Circuit breaker временно остановил обращения к сервису обработки",
+                    content = @Content
             )
     })
     public ResponseEntity<AudioUploadResponse> upload(
@@ -101,7 +110,10 @@ public class AudioController {
             @RequestPart("file") MultipartFile file,
 
             @Parameter(hidden = true)
-            @RequestPart("options") JsonNode options
+            @RequestPart("options") JsonNode options,
+
+            @Parameter(hidden = true)
+            Authentication authentication
     ) {
         AudioProcessingMetadata metadata = new AudioProcessingMetadata(
                 options
@@ -109,6 +121,10 @@ public class AudioController {
 
         return ResponseEntity
                 .accepted()
-                .body(audioService.upload(metadata, file));
+                .body(audioService.upload(
+                        metadata,
+                        file,
+                        authentication.getName()
+                ));
     }
 }

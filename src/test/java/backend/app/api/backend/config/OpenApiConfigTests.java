@@ -33,4 +33,17 @@ class OpenApiConfigTests {
         assertEquals("bearer", bearerAuth.getScheme());
         assertEquals("JWT", bearerAuth.getBearerFormat());
     }
+
+    @Test
+    void openApiDefinesBackendSessionAuthentication() {
+        var openApi = config.sonoraOpenApi();
+        SecurityScheme sessionAuth = openApi.getComponents()
+                .getSecuritySchemes()
+                .get(OpenApiConfig.SESSION_AUTH);
+
+        assertNotNull(sessionAuth);
+        assertEquals(SecurityScheme.Type.APIKEY, sessionAuth.getType());
+        assertEquals(SecurityScheme.In.COOKIE, sessionAuth.getIn());
+        assertEquals("JSESSIONID", sessionAuth.getName());
+    }
 }

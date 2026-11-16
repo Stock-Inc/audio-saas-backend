@@ -2,6 +2,7 @@ package backend.app.api.backend.audio.controller.service;
 
 import backend.app.api.backend.audio.controller.client.AudioProcessorClient;
 import backend.app.api.backend.audio.controller.dto.AudioProcessingMetadata;
+import backend.app.api.backend.audio.controller.dto.AudioProcessorJobResponse;
 import backend.app.api.backend.audio.controller.entity.AudioStatus;
 import backend.app.api.backend.audio.controller.entity.AudioUpload;
 import backend.app.api.backend.audio.controller.repository.AudioUploadRepository;
@@ -34,6 +35,10 @@ import static org.mockito.Mockito.when;
 class AudioServiceTests {
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
+    private static final String OWNER_ID = "user-123";
+    private static final java.util.UUID JOB_ID = java.util.UUID.fromString(
+            "7747f2c4-c6c0-4b48-9e80-724bb8a85938"
+    );
 
     @Mock
     private AudioUploadRepository repository;
@@ -47,6 +52,7 @@ class AudioServiceTests {
     @Test
     void uploadStoresMetadataAndReturnsForwardedStatus() throws Exception {
         returnSavedEntity();
+        returnProcessorJob();
         var metadata = metadata("""
                 {"diarization":true,"summary":true,"tasks":true}
                 """);
@@ -57,7 +63,7 @@ class AudioServiceTests {
                 "audio-content".getBytes(StandardCharsets.UTF_8)
         );
 
-        var response = audioService.upload(metadata, file);
+        var response = audioService.upload(metadata, file, OWNER_ID);
 
         var audioCaptor = ArgumentCaptor.forClass(AudioUpload.class);
         verify(repository, times(2)).save(audioCaptor.capture());
@@ -68,19 +74,26 @@ class AudioServiceTests {
         assertEquals("voice.mp3", savedAudio.getOriginalFilename());
         assertEquals("audio/mpeg", savedAudio.getContentType());
         assertEquals(file.getSize(), savedAudio.getSizeBytes());
+        assertEquals(OWNER_ID, savedAudio.getOwnerId());
+        assertNotNull(savedAudio.getRequestId());
+        assertNotNull(savedAudio.getRecordId());
+        assertEquals(JOB_ID, savedAudio.getProcessingJobId());
         assertEquals(AudioStatus.FORWARDED, savedAudio.getStatus());
         assertEquals(AudioStatus.FORWARDED, response.status());
         verify(processorClient).forward(
                 metadata,
                 file,
                 "voice.mp3",
-                MediaType.parseMediaType("audio/mpeg")
+                MediaType.parseMediaType("audio/mpeg"),
+                savedAudio.getRequestId(),
+                savedAudio.getRecordId()
         );
     }
 
     @Test
     void uploadUsesOctetStreamWhenContentTypeIsMissing() throws Exception {
         returnSavedEntity();
+        returnProcessorJob();
         var file = new MockMultipartFile(
                 "file",
                 "voice.raw",
@@ -88,7 +101,7 @@ class AudioServiceTests {
                 "audio-content".getBytes(StandardCharsets.UTF_8)
         );
 
-        audioService.upload(metadata("{}"), file);
+        audioService.upload(metadata("{}"), file, OWNER_ID);
 
         var audioCaptor = ArgumentCaptor.forClass(AudioUpload.class);
         verify(repository, times(2)).save(audioCaptor.capture());
@@ -109,7 +122,7 @@ class AudioServiceTests {
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> audioService.upload(metadata("{}"), file)
+                () -> audioService.upload(metadata("{}"), file, OWNER_ID)
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
@@ -128,7 +141,7 @@ class AudioServiceTests {
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> audioService.upload(metadata("[]"), file)
+                () -> audioService.upload(metadata("[]"), file, OWNER_ID)
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
@@ -147,7 +160,7 @@ class AudioServiceTests {
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> audioService.upload(metadata("{}"), file)
+                () -> audioService.upload(metadata("{}"), file, OWNER_ID)
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
@@ -166,7 +179,7 @@ class AudioServiceTests {
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> audioService.upload(metadata("{}"), file)
+                () -> audioService.upload(metadata("{}"), file, OWNER_ID)
         );
 
         assertEquals(
@@ -194,12 +207,14 @@ class AudioServiceTests {
                         any(AudioProcessingMetadata.class),
                         any(MultipartFile.class),
                         any(String.class),
-                        any(MediaType.class)
+                        any(MediaType.class),
+                        any(java.util.UUID.class),
+                        any(java.util.UUID.class)
                 );
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> audioService.upload(metadata, file)
+                () -> audioService.upload(metadata, file, OWNER_ID)
         );
 
         assertEquals(HttpStatus.BAD_GATEWAY, exception.getStatusCode());
@@ -223,5 +238,20 @@ class AudioServiceTests {
     private void returnSavedEntity() {
         when(repository.save(any(AudioUpload.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
+    }
+
+    private void returnProcessorJob() {
+        when(processorClient.forward(
+                any(AudioProcessingMetadata.class),
+                any(MultipartFile.class),
+                any(String.class),
+                any(MediaType.class),
+                any(java.util.UUID.class),
+                any(java.util.UUID.class)
+        )).thenAnswer(invocation -> new AudioProcessorJobResponse(
+                JOB_ID,
+                invocation.getArgument(5),
+                "QUEUED"
+        ));
     }
 }

@@ -11,7 +11,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    open-in-view: false
+    show-sql: ${SPRING_JPA_SHOW_SQL:false}
 
   liquibase:
     enabled: true
@@ -26,19 +27,26 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:9090/realms/demo
-          jwk-set-uri: http://keycloak:8080/realms/demo/protocol/openid-connect/certs
+          issuer-uri: ${KEYCLOAK_PUBLIC_URL:http://localhost:9090/realms/demo}
+          jwk-set-uri: ${KEYCLOAK_BACKCHANNEL_URL:http://localhost:9090/realms/demo}/protocol/openid-connect/certs
 
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     properties:
       schema.registry.url: ${SPRING_KAFKA_PROPERTIES_SCHEMA_REGISTRY_URL:http://localhost:8085}
+    consumer:
+      group-id: ${AUDIO_KAFKA_CONSUMER_GROUP:audio-saas-backend}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
+      properties:
+        specific.avro.reader: true
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus
+        include: health,info,prometheus, circuitbreakers,circuitbreakerevents
 
   endpoint:
     health:
@@ -56,6 +64,10 @@ audio:
     url: ${AUDIO_PROCESSOR_URL}
     connect-timeout: 5s
     read-timeout: 120s
+  kafka:
+    topic:
+      job-results: ${AUDIO_KAFKA_TOPIC_JOB_RESULTS:ml-job-results}
+    consumer-group: ${AUDIO_KAFKA_CONSUMER_GROUP:audio-saas-backend}
 
 server:
   port: 8081
@@ -69,7 +81,7 @@ springdoc:
     path: /swagger-ui.html
     operations-sorter: method
     tags-sorter: alpha
-    doc-expansion: full
+    doc-expansion: none
     filter: true
     try-it-out-enabled: true
     display-request-duration: true

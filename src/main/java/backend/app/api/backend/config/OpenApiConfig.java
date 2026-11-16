@@ -16,6 +16,7 @@ import java.util.List;
 public class OpenApiConfig {
 
     public static final String BEARER_AUTH = "bearerAuth";
+    public static final String SESSION_AUTH = "sessionAuth";
 
     @Bean
     public OpenAPI sonoraOpenApi() {
@@ -39,6 +40,16 @@ public class OpenApiConfig {
                                         .type(SecurityScheme.Type.HTTP)
                                         .scheme("bearer")
                                         .bearerFormat("JWT")
+                        )
+                        .addSecuritySchemes(
+                                SESSION_AUTH,
+                                new SecurityScheme()
+                                        .name("JSESSIONID")
+                                        .description(
+                                                "Backend session cookie created by the Keycloak OAuth2 login flow"
+                                        )
+                                        .type(SecurityScheme.Type.APIKEY)
+                                        .in(SecurityScheme.In.COOKIE)
                         ))
                 .servers(List.of(new Server()
                         .url("/")

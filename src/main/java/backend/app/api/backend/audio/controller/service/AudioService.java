@@ -2,15 +2,18 @@ package backend.app.api.backend.audio.controller.service;
 
 import backend.app.api.backend.audio.controller.client.AudioProcessorClient;
 import backend.app.api.backend.audio.controller.dto.AudioProcessingMetadata;
+import backend.app.api.backend.audio.controller.dto.AudioProcessorJobResponse;
 import backend.app.api.backend.audio.controller.dto.AudioUploadResponse;
 import backend.app.api.backend.audio.controller.entity.AudioUpload;
 import backend.app.api.backend.audio.controller.repository.AudioUploadRepository;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
@@ -24,10 +27,12 @@ public class AudioService {
 
     private final AudioUploadRepository repository;
     private final AudioProcessorClient processorClient;
+    private final TransactionTemplate transactionTemplate;
 
     public AudioUploadResponse upload(
             AudioProcessingMetadata metadata,
-            MultipartFile file
+            MultipartFile file,
+            String ownerId
     ) {
         log.info(
                 "Audio upload started: sizeBytes={}, contentType={}",
@@ -48,14 +53,14 @@ public class AudioService {
             throw exception;
         }
 
-        AudioUpload audio = saveUpload(file, validated);
+        AudioUpload audio = saveUpload(file, validated, ownerId);
 
         log.info(
                 "Audio upload stored: uploadId={}",
                 audio.getId()
         );
 
-        forwardAudio(audio, metadata, file, validated);
+        audio = forwardAudio(audio, metadata, file, validated);
 
         return AudioUploadResponse.from(audio);
     }
@@ -129,10 +134,14 @@ public class AudioService {
 
     private AudioUpload saveUpload(
             MultipartFile file,
-            ValidatedFile validated
+            ValidatedFile validated,
+            String ownerId
     ) {
         AudioUpload audio = AudioUpload.builder()
                 .id(UUID.randomUUID())
+                .requestId(UUID.randomUUID())
+                .recordId(UUID.randomUUID())
+                .ownerId(ownerId)
                 .originalFilename(validated.filename())
                 .contentType(validated.mediaType().toString())
                 .sizeBytes(file.getSize())
@@ -141,26 +150,47 @@ public class AudioService {
         return repository.save(audio);
     }
 
-    private void forwardAudio(
+    private AudioUpload forwardAudio(
             AudioUpload audio,
             AudioProcessingMetadata metadata,
             MultipartFile file,
             ValidatedFile validated
     ) {
         try {
-            processorClient.forward(
+            AudioProcessorJobResponse job = processorClient.forward(
                     metadata,
                     file,
                     validated.filename(),
-                    validated.mediaType()
+                    validated.mediaType(),
+                    audio.getRequestId(),
+                    audio.getRecordId()
             );
 
-            audio.markForwarded();
-            repository.save(audio);
+            AudioUpload current = repository.findById(audio.getId())
+                    .orElse(audio);
+            current.markForwarded(job.jobId());
+            repository.save(current);
 
             log.info(
                     "Audio upload forwarded: uploadId={}",
+                    current.getId()
+            );
+
+            return current;
+
+        } catch (CallNotPermittedException exception) {
+            log.warn(
+                    "Audio processor circuit breaker is open: uploadId={}",
                     audio.getId()
+            );
+
+            audio.markFailed("Audio processor temporarily unavailable");
+            repository.save(audio);
+
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "Audio processor temporarily unavailable",
+                    exception
             );
 
         } catch (RestClientException exception) {

@@ -22,11 +22,12 @@ public class SecurityConfig {
 
     @Bean
     public ClientRegistrationRepository clientRegistrationRepository(
-            @Value("${KEYCLOAK_CLIENT_SECRET}") String secret
+            @Value("${KEYCLOAK_CLIENT_SECRET}") String secret,
+            @Value("${KEYCLOAK_PUBLIC_URL:http://localhost:9090/realms/demo}")
+            String publicUrl,
+            @Value("${KEYCLOAK_BACKCHANNEL_URL:http://localhost:9090/realms/demo}")
+            String backchannelUrl
     ) {
-        String publicUrl = "http://localhost:9090/realms/demo";
-        String dockerUrl = "http://keycloak:8080/realms/demo";
-
         ClientRegistration client = ClientRegistration
                 .withRegistrationId("keycloak")
                 .clientId("spring-app")
@@ -44,13 +45,13 @@ public class SecurityConfig {
                         publicUrl + "/protocol/openid-connect/auth"
                 )
                 .tokenUri(
-                        dockerUrl + "/protocol/openid-connect/token"
+                        backchannelUrl + "/protocol/openid-connect/token"
                 )
                 .jwkSetUri(
-                        dockerUrl + "/protocol/openid-connect/certs"
+                        backchannelUrl + "/protocol/openid-connect/certs"
                 )
                 .userInfoUri(
-                        dockerUrl + "/protocol/openid-connect/userinfo"
+                        backchannelUrl + "/protocol/openid-connect/userinfo"
                 )
                 .userNameAttributeName("sub")
                 .clientName("Keycloak")
@@ -61,14 +62,21 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(
-            HttpSecurity http
+            HttpSecurity http,
+            @Value("${FRONTEND_SUCCESS_URL:http://localhost:3000/auth/callback}")
+            String frontendSuccessUrl
     ) throws Exception {
         return http
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/me").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/actuator/prometheus")
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/actuator/health",
+                                "/actuator/health/**",
+                                "/actuator/prometheus"
+                        )
                         .permitAll()
                         .requestMatchers(
                                 "/v3/api-docs/**",
@@ -84,7 +92,7 @@ public class SecurityConfig {
                         )
                 )
                 .oauth2Login(login -> login
-                        .defaultSuccessUrl("/api/v1/auth/me", true)
+                        .defaultSuccessUrl(frontendSuccessUrl, true)
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(Customizer.withDefaults())

@@ -1,0 +1,82 @@
+{
+  "type": "record",
+  "name": "MlJobResultEvent",
+  "namespace": "com.example.ml.infrastructure.kafka.dto",
+  "aliases": ["MLJobResultEvent"],
+  "fields": [
+    {"name": "jobId", "type": "string"},
+    {"name": "recordId", "type": "string"},
+    {
+      "name": "status",
+      "type": {
+        "type": "enum",
+        "name": "MlJobStatus",
+        "symbols": ["QUEUED", "TRANSCRIBING", "ANALYSING", "COMPLETED", "FAILED"],
+        "default": "QUEUED"
+      }
+    },
+    {
+      "name": "transcript",
+      "type": [
+        "null",
+        {
+          "type": "record",
+          "name": "Transcript",
+          "fields": [
+            {
+              "name": "segments",
+              "type": {
+                "type": "array",
+                "items": {
+                  "type": "record",
+                  "name": "Segment",
+                  "fields": [
+                    {"name": "id", "type": ["null", "int"], "default": null},
+                    {"name": "speaker", "type": ["null", "string"], "default": null},
+                    {"name": "start", "type": "double"},
+                    {"name": "end", "type": "double"},
+                    {"name": "text", "type": "string"}
+                  ]
+                }
+              },
+              "default": []
+            }
+          ]
+        }
+      ],
+      "default": null
+    },
+    {
+      "name": "analysis",
+      "type": [
+        "null",
+        {
+          "type": "record",
+          "name": "Analysis",
+          "fields": [
+            {"name": "summary", "type": ["null", "string"], "default": null},
+            {"name": "topics", "type": {"type": "array", "items": "string"}, "default": []},
+            {"name": "keyPoints", "type": {"type": "array", "items": "string"}, "default": []},
+            {"name": "decisions", "type": {"type": "array", "items": "string"}, "default": []},
+            {
+              "name": "tasks",
+              "type": {
+                "type": "array",
+                "items": {
+                  "type": "record",
+                  "name": "Task",
+                  "fields": [
+                    {"name": "text", "type": "string"},
+                    {"name": "assignee", "type": ["null", "string"], "default": null}
+                  ]
+                }
+              },
+              "default": []
+            }
+          ]
+        }
+      ],
+      "default": null
+    }
+  ]
+}

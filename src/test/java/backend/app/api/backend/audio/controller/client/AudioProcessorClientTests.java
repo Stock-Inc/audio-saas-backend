@@ -13,17 +13,28 @@ import tools.jackson.databind.json.JsonMapper;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.UUID;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.withNoContent;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 class AudioProcessorClientTests {
 
+    private static final UUID REQUEST_ID = UUID.fromString(
+            "3e983854-c2ba-4d12-af8b-a8e2086c1370"
+    );
+    private static final UUID RECORD_ID = UUID.fromString(
+            "a96725b4-df5e-41bb-92c3-3ec3786f8621"
+    );
+
     @Test
-    void forwardIncludesFileAndOptionsInMultipartRequest() throws Exception {
+    void forwardFollowsPublishedProcessorContract() throws Exception {
         URI processorUrl = URI.create("http://audio-processor/process");
         RestClient.Builder restClientBuilder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer
@@ -50,7 +61,16 @@ class AudioProcessorClientTests {
                 "audio-content".getBytes(StandardCharsets.UTF_8)
         );
 
-        server.expect(requestTo(processorUrl))
+        URI expectedUrl = URI.create(
+                processorUrl
+                        + "?requestId=" + REQUEST_ID
+                        + "&recordId=" + RECORD_ID
+        );
+        UUID jobId = UUID.fromString(
+                "7747f2c4-c6c0-4b48-9e80-724bb8a85938"
+        );
+
+        server.expect(requestTo(expectedUrl))
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(content().contentTypeCompatibleWith(
                         MediaType.MULTIPART_FORM_DATA
@@ -67,15 +87,77 @@ class AudioProcessorClientTests {
                 .andExpect(content().string(not(containsString(
                         "name=\"recordId\""
                 ))))
-                .andRespond(withNoContent());
+                .andRespond(withSuccess(
+                        "{\"jobId\":\"" + jobId
+                                + "\",\"recordId\":\"" + RECORD_ID
+                                + "\",\"status\":\"QUEUED\"}",
+                        MediaType.APPLICATION_JSON
+                ));
 
-        client.forward(
+        var response = client.forward(
                 metadata,
                 file,
                 file.getOriginalFilename(),
-                MediaType.parseMediaType(file.getContentType())
+                MediaType.parseMediaType(file.getContentType()),
+                REQUEST_ID,
+                RECORD_ID
         );
 
+        server.verify();
+        assertEquals(jobId, response.jobId());
+        assertEquals(RECORD_ID, response.recordId());
+        assertEquals("QUEUED", response.status());
+    }
+
+    @Test
+    void forwardRejectsResponseForAnotherRecord() throws Exception {
+        URI processorUrl = URI.create("http://audio-processor/process");
+        RestClient.Builder restClientBuilder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer
+                .bindTo(restClientBuilder)
+                .build();
+        var client = new AudioProcessorClient(
+                restClientBuilder.build(),
+                new AudioProcessorProperties(
+                        processorUrl,
+                        Duration.ofSeconds(5),
+                        Duration.ofSeconds(120)
+                )
+        );
+        var metadata = new AudioProcessingMetadata(
+                JsonMapper.builder().build().readTree("{}")
+        );
+        var file = new MockMultipartFile(
+                "file",
+                "voice.mp3",
+                "audio/mpeg",
+                "audio-content".getBytes(StandardCharsets.UTF_8)
+        );
+
+        server.expect(requestTo(containsString("recordId=" + RECORD_ID)))
+                .andRespond(withSuccess(
+                        "{\"jobId\":\"7747f2c4-c6c0-4b48-9e80-724bb8a85938\","
+                                + "\"recordId\":\"55555555-5555-5555-5555-555555555555\","
+                                + "\"status\":\"QUEUED\"}",
+                        MediaType.APPLICATION_JSON
+                ));
+
+        var exception = assertThrows(
+                org.springframework.web.client.RestClientException.class,
+                () -> client.forward(
+                        metadata,
+                        file,
+                        file.getOriginalFilename(),
+                        MediaType.parseMediaType(file.getContentType()),
+                        REQUEST_ID,
+                        RECORD_ID
+                )
+        );
+
+        assertEquals(
+                "Audio processor response contains an unexpected recordId",
+                exception.getMessage()
+        );
         server.verify();
     }
 }

@@ -34,6 +34,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -81,7 +82,8 @@ class AudioControllerTests {
         );
         when(audioService.upload(
                 any(AudioProcessingMetadata.class),
-                any(MultipartFile.class)
+                any(MultipartFile.class),
+                anyString()
         )).thenReturn(response);
 
         mockMvc.perform(multipart("/api/v1/audio")
@@ -102,7 +104,8 @@ class AudioControllerTests {
         );
         verify(audioService).upload(
                 metadataCaptor.capture(),
-                fileCaptor.capture()
+                fileCaptor.capture(),
+                anyString()
         );
 
         assertTrue(metadataCaptor.getValue().options()
@@ -182,7 +185,10 @@ class AudioControllerTests {
                         "$.components.securitySchemes.bearerAuth.scheme"
                 ).value("bearer"))
                 .andExpect(jsonPath(
-                        "$.paths['/api/v1/audio'].post.security[0].bearerAuth"
+                        "$.paths['/api/v1/audio'].post.security[0].sessionAuth"
+                ).isArray())
+                .andExpect(jsonPath(
+                        "$.paths['/api/v1/audio'].post.security[1].bearerAuth"
                 ).isArray())
                 .andExpect(jsonPath(
                         "$.paths['/api/v1/audio'].post.requestBody.required"
@@ -190,7 +196,10 @@ class AudioControllerTests {
                 .andExpect(jsonPath(
                         "$.paths['/api/v1/audio'].post.requestBody.content"
                                 + "['multipart/form-data'].schema['$ref']"
-                ).value("#/components/schemas/AudioUploadRequest"));
+                ).value("#/components/schemas/AudioUploadRequest"))
+                .andExpect(jsonPath(
+                        "$.paths['/api/v1/audio'].post.responses['503']"
+                ).exists());
     }
 
     @Test

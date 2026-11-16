@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+            http://www.liquibase.org/xml/ns/dbchangelog
+            https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="003-add-library-and-results" author="codex">
+        <addColumn tableName="audio_uploads">
+            <column name="owner_id" type="VARCHAR(255)"/>
+            <column name="processing_job_id" type="UUID"/>
+            <column name="result_filename" type="VARCHAR(255)"/>
+            <column name="result_content_type" type="VARCHAR(100)"/>
+            <column name="result_size_bytes" type="BIGINT"/>
+            <column name="result_data" type="BYTEA"/>
+        </addColumn>
+
+        <sql>
+            UPDATE audio_uploads
+            SET request_id = COALESCE(request_id, gen_random_uuid()),
+                record_id = COALESCE(record_id, gen_random_uuid()),
+                owner_id = COALESCE(owner_id, 'legacy:' || id::text)
+        </sql>
+
+        <addNotNullConstraint tableName="audio_uploads" columnName="request_id" columnDataType="UUID"/>
+        <addNotNullConstraint tableName="audio_uploads" columnName="record_id" columnDataType="UUID"/>
+        <addNotNullConstraint tableName="audio_uploads" columnName="owner_id" columnDataType="VARCHAR(255)"/>
+        <createIndex tableName="audio_uploads" indexName="idx_audio_uploads_owner_id">
+            <column name="owner_id"/>
+        </createIndex>
+
+        <createTable tableName="audio_folders">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="owner_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="audio_folders" columnNames="owner_id,name" constraintName="uk_audio_folders_owner_name"/>
+        <createIndex tableName="audio_folders" indexName="idx_audio_folders_owner_id">
+            <column name="owner_id"/>
+        </createIndex>
+
+        <createTable tableName="audio_tags">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="owner_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="audio_tags" columnNames="owner_id,name" constraintName="uk_audio_tags_owner_name"/>
+        <createIndex tableName="audio_tags" indexName="idx_audio_tags_owner_id">
+            <column name="owner_id"/>
+        </createIndex>
+
+        <addColumn tableName="audio_uploads">
+            <column name="folder_id" type="UUID"/>
+        </addColumn>
+        <addForeignKeyConstraint
+                baseTableName="audio_uploads"
+                baseColumnNames="folder_id"
+                referencedTableName="audio_folders"
+                referencedColumnNames="id"
+                constraintName="fk_audio_uploads_folder"
+                onDelete="SET NULL"/>
+        <createIndex tableName="audio_uploads" indexName="idx_audio_uploads_folder_id">
+            <column name="folder_id"/>
+        </createIndex>
+
+        <createTable tableName="audio_upload_tags">
+            <column name="audio_upload_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tag_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="audio_upload_tags" columnNames="audio_upload_id,tag_id" constraintName="pk_audio_upload_tags"/>
+        <addForeignKeyConstraint
+                baseTableName="audio_upload_tags"
+                baseColumnNames="audio_upload_id"
+                referencedTableName="audio_uploads"
+                referencedColumnNames="id"
+                constraintName="fk_audio_upload_tags_upload"
+                onDelete="CASCADE"/>
+        <addForeignKeyConstraint
+                baseTableName="audio_upload_tags"
+                baseColumnNames="tag_id"
+                referencedTableName="audio_tags"
+                referencedColumnNames="id"
+                constraintName="fk_audio_upload_tags_tag"
+                onDelete="CASCADE"/>
+        <createIndex tableName="audio_upload_tags" indexName="idx_audio_upload_tags_tag_id">
+            <column name="tag_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>
