@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -71,6 +72,76 @@ class AudioLibraryServiceTests {
         assertEquals(2, result.size());
         assertEquals(folder, first.getFolder());
         assertEquals(folder, second.getFolder());
+    }
+
+    @Test
+    void createFolderCreatesChildUnderOwnedParent() {
+        AudioFolder parent = folder();
+        when(folderRepository.findByIdAndOwnerId(parent.getId(), OWNER_ID))
+                .thenReturn(Optional.of(parent));
+        when(folderRepository.existsByOwnerIdAndParent_IdAndNameIgnoreCase(
+                OWNER_ID,
+                parent.getId(),
+                "Interviews"
+        )).thenReturn(false);
+        when(folderRepository.save(any(AudioFolder.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var result = service.createFolder(
+                OWNER_ID,
+                " Interviews ",
+                parent.getId()
+        );
+
+        assertEquals("Interviews", result.name());
+        assertEquals(parent.getId(), result.parentId());
+        verify(folderRepository).save(argThat(folder ->
+                folder.getParent() == parent
+                        && folder.getName().equals("Interviews")
+        ));
+    }
+
+    @Test
+    void createFolderRejectsParentOwnedByAnotherUser() {
+        UUID foreignParentId = UUID.randomUUID();
+        when(folderRepository.findByIdAndOwnerId(foreignParentId, OWNER_ID))
+                .thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> service.createFolder(
+                        OWNER_ID,
+                        "Interviews",
+                        foreignParentId
+                )
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        verify(folderRepository, never()).save(any());
+    }
+
+    @Test
+    void createFolderRejectsDuplicateNameWithinSameParent() {
+        AudioFolder parent = folder();
+        when(folderRepository.findByIdAndOwnerId(parent.getId(), OWNER_ID))
+                .thenReturn(Optional.of(parent));
+        when(folderRepository.existsByOwnerIdAndParent_IdAndNameIgnoreCase(
+                OWNER_ID,
+                parent.getId(),
+                "Interviews"
+        )).thenReturn(true);
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> service.createFolder(
+                        OWNER_ID,
+                        "Interviews",
+                        parent.getId()
+                )
+        );
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+        verify(folderRepository, never()).save(any());
     }
 
     @Test

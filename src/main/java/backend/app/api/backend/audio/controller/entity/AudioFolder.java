@@ -2,7 +2,10 @@ package backend.app.api.backend.audio.controller.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -32,6 +35,10 @@ public class AudioFolder {
 
     @Column(nullable = false, length = 100)
     private String name;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private AudioFolder parent;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

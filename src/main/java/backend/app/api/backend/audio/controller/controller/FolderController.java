@@ -1,6 +1,6 @@
 package backend.app.api.backend.audio.controller.controller;
 
-import backend.app.api.backend.audio.controller.dto.CreateNamedItemRequest;
+import backend.app.api.backend.audio.controller.dto.CreateFolderRequest;
 import backend.app.api.backend.audio.controller.dto.FolderResponse;
 import backend.app.api.backend.audio.controller.service.AudioLibraryService;
 import backend.app.api.backend.config.OpenApiConfig;
@@ -40,15 +40,17 @@ public class FolderController {
             @ApiResponse(responseCode = "201", description = "Папка создана"),
             @ApiResponse(responseCode = "400", description = "Имя пустое или длиннее 100 символов", content = @Content),
             @ApiResponse(responseCode = "401", description = "Требуется авторизация", content = @Content),
-            @ApiResponse(responseCode = "409", description = "Папка с таким именем уже существует", content = @Content)
+            @ApiResponse(responseCode = "404", description = "Родительская папка не найдена", content = @Content),
+            @ApiResponse(responseCode = "409", description = "Папка с таким именем уже существует у выбранного родителя", content = @Content)
     })
     public FolderResponse create(
-            @Valid @RequestBody CreateNamedItemRequest request,
+            @Valid @RequestBody CreateFolderRequest request,
             Authentication authentication
     ) {
         return libraryService.createFolder(
                 authentication.getName(),
-                request.name()
+                request.name(),
+                request.parentId()
         );
     }
 

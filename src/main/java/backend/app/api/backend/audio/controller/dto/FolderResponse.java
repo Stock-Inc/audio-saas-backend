@@ -10,6 +10,7 @@ import java.util.UUID;
 public record FolderResponse(
         UUID id,
         String name,
+        UUID parentId,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -17,6 +18,7 @@ public record FolderResponse(
         return new FolderResponse(
                 folder.getId(),
                 folder.getName(),
+                folder.getParent() == null ? null : folder.getParent().getId(),
                 folder.getCreatedAt(),
                 folder.getUpdatedAt()
         );

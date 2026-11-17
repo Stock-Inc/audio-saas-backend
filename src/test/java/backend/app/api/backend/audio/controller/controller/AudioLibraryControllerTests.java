@@ -27,6 +27,7 @@ import java.util.UUID;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
@@ -86,10 +87,11 @@ class AudioLibraryControllerTests {
     @Test
     void createFolderUsesAuthenticatedOwner() throws Exception {
         UUID folderId = UUID.randomUUID();
-        when(libraryService.createFolder(anyString(), eq("Meetings")))
+        when(libraryService.createFolder(anyString(), eq("Meetings"), isNull()))
                 .thenReturn(new FolderResponse(
                         folderId,
                         "Meetings",
+                        null,
                         null,
                         null
                 ));
@@ -102,7 +104,43 @@ class AudioLibraryControllerTests {
                 .andExpect(jsonPath("$.id").value(folderId.toString()))
                 .andExpect(jsonPath("$.name").value("Meetings"));
 
-        verify(libraryService).createFolder(anyString(), eq("Meetings"));
+        verify(libraryService).createFolder(anyString(), eq("Meetings"), isNull());
+    }
+
+    @Test
+    void createNestedFolderPassesParentId() throws Exception {
+        UUID folderId = UUID.randomUUID();
+        UUID parentId = UUID.randomUUID();
+        when(libraryService.createFolder(
+                anyString(),
+                eq("Interviews"),
+                eq(parentId)
+        )).thenReturn(new FolderResponse(
+                folderId,
+                "Interviews",
+                parentId,
+                null,
+                null
+        ));
+
+        mockMvc.perform(post("/api/v1/folders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Interviews",
+                                  "parentId": "%s"
+                                }
+                                """.formatted(parentId))
+                        .with(oidcLogin()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(folderId.toString()))
+                .andExpect(jsonPath("$.parentId").value(parentId.toString()));
+
+        verify(libraryService).createFolder(
+                anyString(),
+                eq("Interviews"),
+                eq(parentId)
+        );
     }
 
     @Test

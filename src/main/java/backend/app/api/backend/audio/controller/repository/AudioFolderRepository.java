@@ -13,5 +13,14 @@ public interface AudioFolderRepository extends JpaRepository<AudioFolder, UUID> 
 
     Optional<AudioFolder> findByIdAndOwnerId(UUID id, String ownerId);
 
-    boolean existsByOwnerIdAndNameIgnoreCase(String ownerId, String name);
+    boolean existsByOwnerIdAndParentIsNullAndNameIgnoreCase(
+            String ownerId,
+            String name
+    );
+
+    boolean existsByOwnerIdAndParent_IdAndNameIgnoreCase(
+            String ownerId,
+            UUID parentId,
+            String name
+    );
 }

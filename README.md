@@ -5,7 +5,6 @@ Spring Boot backend для авторизации через Keycloak, загр�
 Актуальные документы:
 
 - [контракт для frontend](docs/frontend-api.md);
-- [проверка интеграции с ML-сервисом](docs/integration-verification.md);
 - Swagger UI после запуска: `http://localhost:8081/swagger-ui.html`;
 - OpenAPI JSON: `http://localhost:8081/v3/api-docs`.
 
@@ -82,8 +81,6 @@ Volumes с данными при обычном `down` сохраняются.
 ```powershell
 .\mvnw.cmd test
 ```
-
-Сквозной тест с реальными локальными PostgreSQL, ML HTTP, Kafka и Schema Registry описан в [integration-verification.md](docs/integration-verification.md). По умолчанию он пропускается и включается только переменной `RUN_EXTERNAL_INTEGRATION_TESTS=true`.
 
 ## API в двух словах
 

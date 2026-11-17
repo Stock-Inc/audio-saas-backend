@@ -220,8 +220,9 @@ export async function downloadResult(id: string): Promise<void> {
 
 | Метод | URL | Тело | Результат |
 | --- | --- | --- | --- |
-| `GET` | `/api/v1/folders` | — | папки по имени |
-| `POST` | `/api/v1/folders` | `{ "name": "Встречи" }` | `201`, созданная папка |
+| `GET` | `/api/v1/folders` | — | плоский список папок с `parentId`, по имени |
+| `POST` | `/api/v1/folders` | `{ "name": "Встречи", "parentId": null }` | `201`, корневая папка |
+| `POST` | `/api/v1/folders` | `{ "name": "Интервью", "parentId": "uuid" }` | `201`, дочерняя папка |
 | `GET` | `/api/v1/tags` | — | теги по имени |
 | `POST` | `/api/v1/tags` | `{ "name": "Важное" }` | `201`, созданный тег |
 | `PUT` | `/api/v1/audio/{id}/folder` | `{ "folderId": "uuid" }` | обновлённый файл |
@@ -230,6 +231,11 @@ export async function downloadResult(id: string): Promise<void> {
 | `PUT` | `/api/v1/audio/{id}/tags` | `{ "tagIds": ["uuid"] }` | обновлённый файл |
 
 Передача пустого `tagIds` удаляет все теги. Массовое перемещение атомарно для выбранного набора: если один ID недоступен, backend отвечает `404` и ничего не перемещает.
+
+Ответ папки содержит `id`, `name`, `parentId`, `createdAt` и `updatedAt`.
+`parentId = null` означает корневую папку. Вложенность не ограничена; дерево на
+frontend собирается из плоского ответа `GET /api/v1/folders`. Имя папки должно
+быть уникальным без учёта регистра только среди соседей одного родителя.
 
 ## Ошибки
 

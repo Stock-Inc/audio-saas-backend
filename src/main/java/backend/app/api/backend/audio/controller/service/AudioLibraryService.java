@@ -29,13 +29,18 @@ public class AudioLibraryService {
     private final AudioTagRepository tagRepository;
 
     @Transactional
-    public FolderResponse createFolder(String ownerId, String requestedName) {
+    public FolderResponse createFolder(
+            String ownerId,
+            String requestedName,
+            UUID parentId
+    ) {
         String name = requestedName.trim();
+        AudioFolder parent = resolveFolder(ownerId, parentId);
 
-        if (folderRepository.existsByOwnerIdAndNameIgnoreCase(ownerId, name)) {
+        if (folderExists(ownerId, parentId, name)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Folder with this name already exists"
+                    "Folder with this name already exists in the parent folder"
             );
         }
 
@@ -43,6 +48,7 @@ public class AudioLibraryService {
                 .id(UUID.randomUUID())
                 .ownerId(ownerId)
                 .name(name)
+                .parent(parent)
                 .build();
 
         return FolderResponse.from(folderRepository.save(folder));
@@ -220,6 +226,23 @@ public class AudioLibraryService {
                         HttpStatus.NOT_FOUND,
                         "Folder not found"
                 ));
+    }
+
+    private boolean folderExists(String ownerId, UUID parentId, String name) {
+        if (parentId == null) {
+            return folderRepository
+                    .existsByOwnerIdAndParentIsNullAndNameIgnoreCase(
+                            ownerId,
+                            name
+                    );
+        }
+
+        return folderRepository
+                .existsByOwnerIdAndParent_IdAndNameIgnoreCase(
+                        ownerId,
+                        parentId,
+                        name
+                );
     }
 
     public record ResultFile(
