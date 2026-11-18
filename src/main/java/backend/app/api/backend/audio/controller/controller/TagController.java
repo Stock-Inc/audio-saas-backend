@@ -5,7 +5,10 @@ import backend.app.api.backend.audio.controller.dto.TagResponse;
 import backend.app.api.backend.audio.controller.service.AudioLibraryService;
 import backend.app.api.backend.config.OpenApiConfig;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -39,7 +42,10 @@ public class TagController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Создать тег")
+    @Operation(
+            summary = "Создать тег",
+            description = "Имя тега должно быть уникальным среди тегов текущего пользователя без учёта регистра."
+    )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Тег создан"),
             @ApiResponse(responseCode = "400", description = "Имя пустое или длиннее 100 символов", content = @Content),
@@ -57,15 +63,35 @@ public class TagController {
     }
 
     @PatchMapping("/{id}")
-    @Operation(summary = "Rename tag")
+    @Operation(
+            summary = "Переименовать тег",
+            description = "Сохраняет UUID тега и привязки к файлам. Сервер обрезает пробелы по краям имени.",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = CreateNamedItemRequest.class),
+                            examples = @ExampleObject(name = "Переименование", value = "{\"name\":\"Срочное\"}"))
+            )
+    )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Updated tag"),
-            @ApiResponse(responseCode = "400", description = "Invalid UUID or name", content = @Content),
-            @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content),
-            @ApiResponse(responseCode = "404", description = "Tag unavailable", content = @Content),
-            @ApiResponse(responseCode = "409", description = "Name already exists", content = @Content)
+            @ApiResponse(responseCode = "200", description = "Обновлённый тег", content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = TagResponse.class),
+                    examples = @ExampleObject(name = "Обновлённый тег", value = """
+                            {
+                              "id": "0fc4a6d0-00c8-4fed-81bb-2c9f0639525e",
+                              "name": "Срочное",
+                              "createdAt": "2026-11-18T08:00:00Z"
+                            }
+                            """)
+            )),
+            @ApiResponse(responseCode = "400", description = "Некорректный UUID или имя", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Требуется авторизация", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Тег отсутствует или недоступен", content = @Content),
+            @ApiResponse(responseCode = "409", description = "Имя уже занято другим тегом пользователя без учёта регистра", content = @Content)
     })
     public TagResponse rename(
+            @Parameter(description = "UUID тега", example = "0fc4a6d0-00c8-4fed-81bb-2c9f0639525e")
             @PathVariable("id") UUID id,
             @Valid @RequestBody CreateNamedItemRequest request,
             Authentication authentication
@@ -75,14 +101,18 @@ public class TagController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @Operation(summary = "Delete tag", description = "Removes the tag from all audio files.")
+    @Operation(summary = "Удалить тег", description = "Удаляет тег и его привязки. Аудиофайлы остаются в библиотеке.")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Tag deleted", content = @Content),
-            @ApiResponse(responseCode = "400", description = "Invalid UUID", content = @Content),
-            @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content),
-            @ApiResponse(responseCode = "404", description = "Tag unavailable", content = @Content)
+            @ApiResponse(responseCode = "204", description = "Тег удалён, тело ответа отсутствует", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Некорректный UUID", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Требуется авторизация", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Тег отсутствует или недоступен", content = @Content)
     })
-    public void delete(@PathVariable("id") UUID id, Authentication authentication) {
+    public void delete(
+            @Parameter(description = "UUID тега", example = "0fc4a6d0-00c8-4fed-81bb-2c9f0639525e")
+            @PathVariable("id") UUID id,
+            Authentication authentication
+    ) {
         libraryService.deleteTag(authentication.getName(), id);
     }
 

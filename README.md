@@ -5,9 +5,11 @@ Spring Boot backend для авторизации через Keycloak, загр�
 Актуальные документы:
 
 - [контракт для frontend](docs/frontend-api.md);
-- [интеграция Android на Kotlin и Jetpack Compose](docs/mobile-api.md);
+- [Android API на Kotlin и Jetpack Compose с примерами Retrofit и JSON](docs/mobile-api.md);
 - Swagger UI после запуска: `http://localhost:8081/swagger-ui.html`;
 - OpenAPI JSON: `http://localhost:8081/v3/api-docs`.
+
+При добавлении или изменении API обновляйте Swagger и оба Markdown-гайда в том же изменении. В Markdown приводите путь, параметры, копируемые примеры запроса и ответа, HTTP-коды и побочные эффекты операции.
 
 ## Архитектура
 

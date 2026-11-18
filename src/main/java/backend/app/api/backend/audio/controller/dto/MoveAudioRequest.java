@@ -6,7 +6,11 @@ import java.util.UUID;
 
 @Schema(description = "Новая папка файла")
 public record MoveAudioRequest(
-        @Schema(description = "ID папки; null перемещает файл в корень")
+        @Schema(
+                description = "UUID целевой папки. Если поле отсутствует или равно null, файл перемещается в корень.",
+                example = "6de80c36-6c03-4a2e-8c03-57f8f1bf1b6b",
+                nullable = true
+        )
         UUID folderId
 ) {
 }

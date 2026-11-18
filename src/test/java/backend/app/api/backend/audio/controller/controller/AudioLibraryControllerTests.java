@@ -27,7 +27,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -295,12 +297,22 @@ class AudioLibraryControllerTests {
                         .exists())
                 .andExpect(jsonPath("$.paths['/api/v1/tags'].get")
                         .exists())
+                .andExpect(jsonPath("$.paths['/api/v1/folders/{id}'].patch.requestBody"
+                        + ".content['application/json'].examples['Переименование'].value.name")
+                        .value("Интервью с клиентами"))
                 .andExpect(jsonPath("$.paths['/api/v1/folders/{id}'].patch.responses['409']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/folders/{id}'].delete.responses['204'].content")
+                        .doesNotExist())
                 .andExpect(jsonPath("$.paths['/api/v1/folders/{id}'].delete.responses['409']").exists())
-                .andExpect(jsonPath("$.paths['/api/v1/tags/{id}'].patch.responses['200']").exists())
-                .andExpect(jsonPath("$.paths['/api/v1/tags/{id}'].delete.responses['204']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/tags/{id}'].patch.responses['200']"
+                        + ".content['application/json'].examples['Обновлённый тег'].value.name")
+                        .value("Срочное"))
+                .andExpect(jsonPath("$.paths['/api/v1/tags/{id}'].delete.responses['204'].content")
+                        .doesNotExist())
+                .andExpect(jsonPath("$.paths['/api/v1/audio'].get.parameters[?(@.name == 'sort')].schema.default",
+                        hasItem("NEWEST")))
                 .andExpect(jsonPath("$.paths['/api/v1/audio'].get.parameters[?(@.name == 'sort')].schema.enum",
-                        org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.hasItem("NAME_ASC"))))
+                        hasItem(containsInAnyOrder("NEWEST", "OLDEST", "NAME_ASC", "NAME_DESC", "SIZE_ASC", "SIZE_DESC"))))
                 .andExpect(jsonPath("$.components.schemas.AudioFileResponse")
                         .exists())
                 .andExpect(jsonPath(

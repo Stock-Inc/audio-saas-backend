@@ -9,7 +9,9 @@ import backend.app.api.backend.audio.controller.service.AudioLibraryService;
 import backend.app.api.backend.config.OpenApiConfig;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -55,7 +57,7 @@ public class AudioLibraryController {
             summary = "Найти аудиофайлы по тексту",
             description = "Поиск по транскриптам и анализу текущего пользователя. "
                     + "Все значимые слова должны встречаться в одном результате. "
-                    + "Возвращает до 50 файлов за запрос в порядке релевантности."
+                    + "Возвращает до 50 файлов за запрос в порядке релевантности. Для следующей страницы увеличьте offset на 50."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Найденные файлы или пустой массив"),
@@ -65,7 +67,7 @@ public class AudioLibraryController {
     public List<AudioFileResponse> search(
             @Parameter(description = "От 1 до 200 символов после удаления пробелов по краям", example = "план релиза")
             @RequestParam("q") String query,
-            @Parameter(description = "Число пропускаемых результатов", example = "0")
+            @Parameter(description = "Число пропускаемых результатов, от 0", example = "0")
             @RequestParam(name = "offset", defaultValue = "0") int offset,
             Authentication authentication
     ) {
@@ -75,11 +77,14 @@ public class AudioLibraryController {
     @GetMapping
     @Operation(
             summary = "Получить аудиотеку",
-            description = "Возвращает файлы текущего пользователя, новые сначала. Фильтры folderId и tagId можно комбинировать."
+            description = """
+                    Фильтры folderId и tagId можно комбинировать. Если folderId отсутствует, поиск идёт по всей библиотеке.
+                    При folderId=null возвращаются файлы в корне. Если совпадений нет, возвращается пустой массив.
+                    """
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Список аудиофайлов"),
-            @ApiResponse(responseCode = "400", description = "Некорректный фильтр", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Некорректный UUID фильтра или неизвестное значение sort", content = @Content),
             @ApiResponse(responseCode = "401", description = "Требуется авторизация", content = @Content)
     })
     public List<AudioFileResponse> list(
@@ -88,7 +93,15 @@ public class AudioLibraryController {
             @RequestParam(required = false) String folderId,
             @Parameter(description = "Фильтр по тегу")
             @RequestParam(required = false) UUID tagId,
-            @Parameter(description = "Sort by upload date, filename (case-insensitive), or size in bytes")
+            @Parameter(
+                    description = """
+                            NEWEST (по умолчанию) и OLDEST сортируют по дате загрузки.
+                            NAME_ASC и NAME_DESC сортируют по имени без учёта регистра.
+                            SIZE_ASC и SIZE_DESC сортируют по размеру в байтах.
+                            При равных значениях порядок определяется UUID файла.
+                            """,
+                    example = "NAME_ASC"
+            )
             @RequestParam(name = "sort", defaultValue = "NEWEST") AudioSort sort
     ) {
         if (!StringUtils.hasText(folderId)) {
@@ -111,6 +124,7 @@ public class AudioLibraryController {
     @Operation(summary = "Получить аудиофайл")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Метаданные аудиофайла"),
+            @ApiResponse(responseCode = "400", description = "Некорректный UUID загрузки", content = @Content),
             @ApiResponse(responseCode = "401", description = "Требуется авторизация", content = @Content),
             @ApiResponse(responseCode = "404", description = "Файл не найден", content = @Content)
     })
@@ -125,17 +139,21 @@ public class AudioLibraryController {
     @GetMapping("/{audioId}/result")
     @Operation(
             summary = "Скачать результат обработки",
-            description = "Возвращает JSON-файл как attachment. До статуса COMPLETED отвечает 409."
+            description = "Возвращает JSON-файл как attachment. Пока результат недоступен, отвечает 409."
     )
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
                     description = "JSON-файл с транскриптом и анализом",
+                    headers = @Header(name = HttpHeaders.CONTENT_DISPOSITION,
+                            description = "Attachment с именем результата",
+                            schema = @Schema(type = "string", example = "attachment; filename=\"audio-result.json\"")),
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(type = "string", format = "binary")
                     )
             ),
+            @ApiResponse(responseCode = "400", description = "Некорректный UUID загрузки", content = @Content),
             @ApiResponse(responseCode = "401", description = "Требуется авторизация", content = @Content),
             @ApiResponse(responseCode = "404", description = "Файл не найден", content = @Content),
             @ApiResponse(responseCode = "409", description = "Результат ещё не готов", content = @Content)
@@ -166,11 +184,20 @@ public class AudioLibraryController {
     @PutMapping("/{audioId}/folder")
     @Operation(
             summary = "Переместить файл в папку",
-            description = "Передайте folderId=null, чтобы убрать файл из папки."
+            description = "Передайте UUID целевой папки или JSON null в folderId для перемещения в корень.",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = MoveAudioRequest.class),
+                            examples = {
+                                    @ExampleObject(name = "В папку", value = "{\"folderId\":\"6de80c36-6c03-4a2e-8c03-57f8f1bf1b6b\"}"),
+                                    @ExampleObject(name = "В корень", value = "{\"folderId\":null}")
+                            })
+            )
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Файл перемещён"),
-            @ApiResponse(responseCode = "400", description = "Некорректное тело запроса", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Некорректный UUID или тело запроса", content = @Content),
             @ApiResponse(responseCode = "401", description = "Требуется авторизация", content = @Content),
             @ApiResponse(responseCode = "404", description = "Файл или папка не найдены", content = @Content)
     })
@@ -189,11 +216,23 @@ public class AudioLibraryController {
     @PutMapping("/folder")
     @Operation(
             summary = "Переместить несколько файлов",
-            description = "Операция атомарна: если хотя бы один файл или папка недоступны пользователю, ничего не перемещается."
+            description = "Передайте UUID целевой папки или JSON null в folderId для перемещения в корень. "
+                    + "Если хотя бы один файл или папка недоступны пользователю, расположение файлов сохраняется.",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = BulkMoveAudioRequest.class),
+                            examples = @ExampleObject(name = "В корень", value = """
+                                    {
+                                      "audioIds": ["7747f2c4-c6c0-4b48-9e80-724bb8a85938"],
+                                      "folderId": null
+                                    }
+                                    """))
+            )
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Перемещённые файлы"),
-            @ApiResponse(responseCode = "400", description = "audioIds отсутствует или пуст", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Некорректный UUID либо audioIds отсутствует или пуст", content = @Content),
             @ApiResponse(responseCode = "401", description = "Требуется авторизация", content = @Content),
             @ApiResponse(responseCode = "404", description = "Один из файлов или папка не найдены", content = @Content)
     })
@@ -211,11 +250,20 @@ public class AudioLibraryController {
     @PutMapping("/{audioId}/tags")
     @Operation(
             summary = "Заменить теги файла",
-            description = "Передайте пустой tagIds, чтобы удалить все теги файла."
+            description = "Полностью заменяет набор тегов файла переданным массивом. Пустой tagIds удаляет все привязки.",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = SetTagsRequest.class),
+                            examples = {
+                                    @ExampleObject(name = "Назначить теги", value = "{\"tagIds\":[\"0fc4a6d0-00c8-4fed-81bb-2c9f0639525e\"]}"),
+                                    @ExampleObject(name = "Очистить теги", value = "{\"tagIds\":[]}")
+                            })
+            )
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Обновлённый файл"),
-            @ApiResponse(responseCode = "400", description = "tagIds отсутствует", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Некорректный UUID либо tagIds отсутствует или равен null", content = @Content),
             @ApiResponse(responseCode = "401", description = "Требуется авторизация", content = @Content),
             @ApiResponse(responseCode = "404", description = "Файл или один из тегов не найдены", content = @Content)
     })

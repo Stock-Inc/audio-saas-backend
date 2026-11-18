@@ -12,7 +12,11 @@ public record BulkMoveAudioRequest(
         @Schema(description = "Непустой набор ID загрузок")
         Set<UUID> audioIds,
 
-        @Schema(description = "ID папки; null перемещает файлы в корень")
+        @Schema(
+                description = "UUID целевой папки. Если поле отсутствует или равно null, файлы перемещаются в корень.",
+                example = "6de80c36-6c03-4a2e-8c03-57f8f1bf1b6b",
+                nullable = true
+        )
         UUID folderId
 ) {
 }

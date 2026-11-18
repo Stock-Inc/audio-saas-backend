@@ -6,6 +6,7 @@ import backend.app.api.backend.audio.controller.dto.FolderResponse;
 import backend.app.api.backend.audio.controller.service.AudioLibraryService;
 import backend.app.api.backend.config.OpenApiConfig;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -43,7 +44,11 @@ public class FolderController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Создать папку")
+    @Operation(
+            summary = "Создать папку",
+            description = "Опустите parentId или передайте JSON null для корня. "
+                    + "Имя должно быть уникальным среди папок с тем же родителем без учёта регистра."
+    )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Папка создана"),
             @ApiResponse(responseCode = "400", description = "Имя пустое или длиннее 100 символов", content = @Content),
@@ -63,15 +68,37 @@ public class FolderController {
     }
 
     @PatchMapping("/{id}")
-    @Operation(summary = "Rename folder")
+    @Operation(
+            summary = "Переименовать папку",
+            description = "Сохраняет UUID, родителя и содержимое папки. Сервер обрезает пробелы по краям имени.",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = CreateNamedItemRequest.class),
+                            examples = @ExampleObject(name = "Переименование", value = "{\"name\":\"Интервью с клиентами\"}"))
+            )
+    )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Updated folder"),
-            @ApiResponse(responseCode = "400", description = "Invalid UUID or name", content = @Content),
-            @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content),
-            @ApiResponse(responseCode = "404", description = "Folder unavailable", content = @Content),
-            @ApiResponse(responseCode = "409", description = "Name already exists", content = @Content)
+            @ApiResponse(responseCode = "200", description = "Обновлённая папка", content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = FolderResponse.class),
+                    examples = @ExampleObject(name = "Обновлённая папка", value = """
+                            {
+                              "id": "6de80c36-6c03-4a2e-8c03-57f8f1bf1b6b",
+                              "name": "Интервью с клиентами",
+                              "parentId": "6de80c36-6c03-4a2e-8c03-57f8f1bf1b6a",
+                              "createdAt": "2026-11-18T09:00:00Z",
+                              "updatedAt": "2026-11-18T10:00:00Z"
+                            }
+                            """)
+            )),
+            @ApiResponse(responseCode = "400", description = "Некорректный UUID или имя", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Требуется авторизация", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Папка отсутствует или недоступна", content = @Content),
+            @ApiResponse(responseCode = "409", description = "Имя уже занято у того же родителя без учёта регистра", content = @Content)
     })
     public FolderResponse rename(
+            @Parameter(description = "UUID папки", example = "6de80c36-6c03-4a2e-8c03-57f8f1bf1b6b")
             @PathVariable("id") UUID id,
             @Valid @RequestBody CreateNamedItemRequest request,
             Authentication authentication
@@ -81,15 +108,23 @@ public class FolderController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @Operation(summary = "Delete folder", description = "Moves audio files to the library root. A folder with subfolders cannot be deleted.")
+    @Operation(
+            summary = "Удалить папку",
+            description = "Файлы удалённой папки перемещаются в корень аудиотеки. "
+                    + "При наличии подпапок операция возвращает 409 и содержимое остаётся на месте."
+    )
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Folder deleted", content = @Content),
-            @ApiResponse(responseCode = "400", description = "Invalid UUID", content = @Content),
-            @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content),
-            @ApiResponse(responseCode = "409", description = "Folder has subfolders", content = @Content),
-            @ApiResponse(responseCode = "404", description = "Folder unavailable", content = @Content)
+            @ApiResponse(responseCode = "204", description = "Папка удалена, тело ответа отсутствует", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Некорректный UUID", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Требуется авторизация", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Папка отсутствует или недоступна", content = @Content),
+            @ApiResponse(responseCode = "409", description = "В папке есть подпапки", content = @Content)
     })
-    public void delete(@PathVariable("id") UUID id, Authentication authentication) {
+    public void delete(
+            @Parameter(description = "UUID папки", example = "6de80c36-6c03-4a2e-8c03-57f8f1bf1b6b")
+            @PathVariable("id") UUID id,
+            Authentication authentication
+    ) {
         libraryService.deleteFolder(authentication.getName(), id);
     }
 
