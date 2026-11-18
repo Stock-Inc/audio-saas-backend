@@ -78,6 +78,34 @@ class AudioLibraryControllerTests {
     }
 
     @Test
+    void audioListDistinguishesRootFolderFromOmittedFolder() throws Exception {
+        UUID tagId = UUID.randomUUID();
+
+        mockMvc.perform(get("/api/v1/audio").with(oidcLogin()))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/audio").param("folderId", "null").with(oidcLogin()))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/audio").param("folderId", "null")
+                        .param("tagId", tagId.toString()).with(oidcLogin()))
+                .andExpect(status().isOk());
+
+        verify(libraryService).audioFiles(anyString(), isNull(), isNull(), eq(false));
+        verify(libraryService).audioFiles(anyString(), isNull(), isNull(), eq(true));
+        verify(libraryService).audioFiles(anyString(), isNull(), eq(tagId), eq(true));
+    }
+
+    @Test
+    void audioListAcceptsUuidAndRejectsInvalidFolderFilter() throws Exception {
+        UUID folderId = UUID.randomUUID();
+        mockMvc.perform(get("/api/v1/audio").param("folderId", folderId.toString()).with(oidcLogin()))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/audio").param("folderId", "invalid").with(oidcLogin()))
+                .andExpect(status().isBadRequest());
+
+        verify(libraryService).audioFiles(anyString(), eq(folderId), isNull(), eq(true));
+    }
+
+    @Test
     void childrenEndpointReturnsDirectChildFolders() throws Exception {
         UUID parentId = UUID.randomUUID();
         UUID childId = UUID.randomUUID();
@@ -92,16 +120,30 @@ class AudioLibraryControllerTests {
     }
 
     @Test
+    void childrenEndpointAcceptsNullForRootFolders() throws Exception {
+        UUID folderId = UUID.randomUUID();
+        when(libraryService.childFolders(anyString(), eq((UUID) null)))
+                .thenReturn(List.of(new FolderResponse(folderId, "Meetings", null, null, null)));
+
+        mockMvc.perform(get("/api/v1/folders/null/children").with(oidcLogin()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(folderId.toString()));
+    }
+
+    @Test
     void childrenEndpointRejectsInvalidFolderId() throws Exception {
         mockMvc.perform(get("/api/v1/folders/invalid/children").with(oidcLogin()))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void openApiDocumentsChildrenEndpoint() throws Exception {
+    void openApiDocumentsFolderChildrenEndpoints() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.paths['/api/v1/folders/{id}/children'].get.responses['200'].content['application/json'].schema.type")
+                        .value("array"))
+                .andExpect(jsonPath("$.paths['/api/v1/folders/null/children'].get.responses['200'].content['application/json'].schema.type")
                         .value("array"));
     }
 

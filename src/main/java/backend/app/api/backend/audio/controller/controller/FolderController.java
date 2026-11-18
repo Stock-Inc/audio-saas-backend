@@ -119,4 +119,23 @@ public class FolderController {
     public List<FolderResponse> children(@PathVariable("id") UUID id, Authentication authentication) {
         return libraryService.childFolders(authentication.getName(), id);
     }
+
+    @GetMapping("/null/children")
+    @Operation(
+            summary = "Получить папки верхнего уровня",
+            description = """
+                    Возвращает папки текущего пользователя с parentId = null,
+                    отсортированные по имени. Если таких папок нет, возвращает пустой массив.
+                    """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Папки по имени", content = @Content(
+                    mediaType = "application/json",
+                    array = @ArraySchema(schema = @Schema(implementation = FolderResponse.class))
+            )),
+            @ApiResponse(responseCode = "401", description = "Требуется авторизация", content = @Content)
+    })
+    public List<FolderResponse> rootChildren(Authentication authentication) {
+        return libraryService.childFolders(authentication.getName(), null);
+    }
 }

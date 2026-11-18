@@ -1,5 +1,7 @@
 # Контракт backend API для frontend
 
+Для Android есть отдельный [гайд по Kotlin, Compose и Bearer JWT](mobile-api.md).
+
 Базовый URL локально: `http://localhost:8081`.
 
 Интерактивный Swagger: `http://localhost:8081/swagger-ui.html`. Машиночитаемый OpenAPI: `http://localhost:8081/v3/api-docs`.
@@ -126,6 +128,7 @@ export async function getAudio(id: string): Promise<AudioFile> {
 | --- | --- | --- |
 | `GET` | `/api/v1/audio` | все файлы пользователя, новые сначала |
 | `GET` | `/api/v1/audio?folderId={uuid}` | файлы папки |
+| `GET` | `/api/v1/audio?folderId=null` | файлы в корне библиотеки, можно добавить `tagId` |
 | `GET` | `/api/v1/audio?tagId={uuid}` | файлы с тегом |
 | `GET` | `/api/v1/audio?folderId={uuid}&tagId={uuid}` | пересечение двух фильтров |
 | `GET` | `/api/v1/audio/{id}` | один файл |
@@ -230,6 +233,7 @@ export async function downloadResult(id: string): Promise<void> {
 | --- | --- | --- | --- |
 | `GET` | `/api/v1/folders` | — | плоский список папок с `parentId`, по имени |
 | `GET` | `/api/v1/folders/{id}/children` | — | непосредственные подпапки, по имени |
+| `GET` | `/api/v1/folders/null/children` | — | папки верхнего уровня с `parentId: null`, по имени |
 | `POST` | `/api/v1/folders` | `{ "name": "Встречи", "parentId": null }` | `201`, корневая папка |
 | `POST` | `/api/v1/folders` | `{ "name": "Интервью", "parentId": "uuid" }` | `201`, дочерняя папка |
 | `GET` | `/api/v1/tags` | — | теги по имени |
@@ -276,7 +280,7 @@ const childFolders = folders.filter(folder => folder.parentId === openedFolderId
 
 Папка без подпапок возвращает `200 OK` с телом `[]`. Некорректный UUID даёт `400`, запрос без авторизации — `401`, отсутствующая или недоступная папка — `404`.
 
-Для загрузки аудиофайлов открытой папки используйте `GET /api/v1/audio?folderId={id}`.
+Для загрузки аудиофайлов открытой папки используйте `GET /api/v1/audio?folderId={id}`, а в корне библиотеки — `GET /api/v1/audio?folderId=null`.
 
 ### Создание дочерней папки
 

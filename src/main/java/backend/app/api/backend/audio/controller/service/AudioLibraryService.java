@@ -64,6 +64,13 @@ public class AudioLibraryService {
 
     @Transactional(readOnly = true)
     public List<FolderResponse> childFolders(String ownerId, UUID parentId) {
+        if (parentId == null) {
+            return folderRepository.findAllByOwnerIdAndParentIsNullOrderByNameAsc(ownerId)
+                    .stream()
+                    .map(FolderResponse::from)
+                    .toList();
+        }
+
         resolveFolder(ownerId, parentId);
         return folderRepository.findAllByOwnerIdAndParent_IdOrderByNameAsc(ownerId, parentId)
                 .stream()
@@ -103,18 +110,19 @@ public class AudioLibraryService {
     public List<AudioFileResponse> audioFiles(
             String ownerId,
             UUID folderId,
-            UUID tagId
+            UUID tagId,
+            boolean filterByFolder
     ) {
         List<AudioUpload> files;
 
-        if (folderId != null && tagId != null) {
+        if (filterByFolder && tagId != null) {
             files = audioRepository
                     .findDistinctByOwnerIdAndFolderIdAndTagsIdOrderByCreatedAtDesc(
                             ownerId,
                             folderId,
                             tagId
                     );
-        } else if (folderId != null) {
+        } else if (filterByFolder) {
             files = audioRepository
                     .findAllByOwnerIdAndFolderIdOrderByCreatedAtDesc(
                             ownerId,

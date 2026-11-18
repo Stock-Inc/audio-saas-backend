@@ -11,6 +11,8 @@ public interface AudioFolderRepository extends JpaRepository<AudioFolder, UUID> 
 
     List<AudioFolder> findAllByOwnerIdOrderByNameAsc(String ownerId);
 
+    List<AudioFolder> findAllByOwnerIdAndParentIsNullOrderByNameAsc(String ownerId);
+
     List<AudioFolder> findAllByOwnerIdAndParent_IdOrderByNameAsc(String ownerId, UUID parentId);
 
     Optional<AudioFolder> findByIdAndOwnerId(UUID id, String ownerId);

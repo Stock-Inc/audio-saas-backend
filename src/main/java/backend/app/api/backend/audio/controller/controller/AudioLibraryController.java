@@ -18,9 +18,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -75,20 +78,30 @@ public class AudioLibraryController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Список аудиофайлов"),
+            @ApiResponse(responseCode = "400", description = "Некорректный фильтр", content = @Content),
             @ApiResponse(responseCode = "401", description = "Требуется авторизация", content = @Content)
     })
     public List<AudioFileResponse> list(
             Authentication authentication,
-            @Parameter(description = "Фильтр по папке")
-            @RequestParam(required = false) UUID folderId,
+            @Parameter(description = "UUID папки или строка null для файлов в корне", example = "null")
+            @RequestParam(required = false) String folderId,
             @Parameter(description = "Фильтр по тегу")
             @RequestParam(required = false) UUID tagId
     ) {
-        return libraryService.audioFiles(
-                authentication.getName(),
-                folderId,
-                tagId
-        );
+        if (!StringUtils.hasText(folderId)) {
+            return libraryService.audioFiles(authentication.getName(), null, tagId, false);
+        }
+        if ("null".equals(folderId)) {
+            return libraryService.audioFiles(authentication.getName(), null, tagId, true);
+        }
+
+        UUID folderUuid;
+        try {
+            folderUuid = UUID.fromString(folderId.trim());
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid folderId", ex);
+        }
+        return libraryService.audioFiles(authentication.getName(), folderUuid, tagId, true);
     }
 
     @GetMapping("/{audioId}")
