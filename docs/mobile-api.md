@@ -65,6 +65,15 @@ Button(onClick = {
 
 В примере `configuration` уже загружена, а `authorizationService` и `viewModel` предоставлены экрану. В `finishLogin` при наличии `response` вызовите `authState.update(response, exception)`, затем `authorizationService.performTokenRequest(response.createTokenExchangeRequest(), ...)`. После успешного обмена обновите состояние через `authState.update(tokenResponse, tokenException)`. Храните состояние входа в репозитории авторизации и отдавайте экрану через `StateFlow`.
 
+### Как сменить адрес возврата
+
+1. Добавьте новый полный URI в **Clients → sonora-android → Settings → Valid Redirect URIs** в активном realm. Для новых окружений обновите `redirectUris` клиента в [экспорте realm](../keycloak-import/demo-realm.json). Если развёрнуты старые сборки, держите оба URI до завершения перехода. [Настройки клиентов Keycloak](https://www.keycloak.org/docs/latest/server_admin/index.html)
+2. В Android передайте тот же полный URI в `AuthorizationRequest.Builder`. Для пользовательской схемы укажите часть до двоеточия в `appAuthRedirectScheme`. Для HTTPS App Link настройте intent filter AppAuth для нужных host и path, включите `android:autoVerify` и разместите `/.well-known/assetlinks.json` с идентификатором пакета и отпечатком сертификата приложения. [Обработка возврата в AppAuth](https://github.com/openid/AppAuth-Android#capturing-the-authorization-redirect) [Android App Links](https://developer.android.com/training/app-links/add-applinks)
+3. В других нативных клиентах зарегистрируйте URI у платформы и в OAuth-библиотеке. Для сборки с отдельным Client ID внесите адрес в настройки именно этого клиента в Keycloak.
+4. Проверьте вход на эмуляторе и устройстве. Браузер должен вернуть управление приложению, обмен кода должен пройти, а `GET /api/v1/auth/me` с access token должен вернуть пользователя.
+
+Для мобильной версии сайта браузерный вход использует `spring-app`. При смене адреса сайта задайте `FRONTEND_SUCCESS_URL` на бэкенде и добавьте origin сайта в `CORS_ALLOWED_ORIGINS`. Если меняется публичный адрес самого бэкенда, внесите полный `https://<backend>/login/oauth2/code/keycloak` в **Valid Redirect URIs** клиента `spring-app`.
+
 ### Обновление токена и выход
 
 - Сериализованный `AuthState` содержит токены. Храните его в приватном зашифрованном хранилище с ключом из Android Keystore. Исключите токены из логов, аналитики и резервных копий.
@@ -82,6 +91,8 @@ Button(onClick = {
 | Открыть папку | `GET /api/v1/folders/{id}/children` и `GET /api/v1/audio?folderId={id}` |
 | Фильтр по тегу | `GET /api/v1/audio?tagId={id}`. Можно добавить `folderId=null` или UUID папки |
 | Поиск | `GET /api/v1/audio/search?q={text}&offset={offset}`, до 50 результатов за запрос |
+| Переименование папки или тега | `PATCH /api/v1/folders/{id}` или `PATCH /api/v1/tags/{id}` с `{"name":"Новое имя"}` |
+| Удаление папки или тега | `DELETE /api/v1/folders/{id}` или `DELETE /api/v1/tags/{id}`, успешный ответ `204` без тела |
 | Карточка аудио | `GET /api/v1/audio/{id}` |
 | Результат | `GET /api/v1/audio/{id}/result` |
 
@@ -93,6 +104,7 @@ interface LibraryApi {
     suspend fun audio(
         @Query("folderId") folderId: String? = null,
         @Query("tagId") tagId: String? = null,
+        @Query("sort") sort: String = "NEWEST",
     ): List<AudioFileDto>
 
     @GET("api/v1/folders/{id}/children")
@@ -100,11 +112,13 @@ interface LibraryApi {
 }
 
 // Корень библиотеки
-val rootFiles = api.audio(folderId = "null")
+val rootFiles = api.audio(folderId = "null", sort = "NAME_ASC")
 val rootFolders = api.folders("null")
 ```
 
 DTO берите из [контракта API](frontend-api.md#аудиотека-и-фильтры) или из `GET /v3/api-docs`. Мутации папок, перемещение файлов и назначение тегов описаны вместе с телами запросов. [Папки и теги](frontend-api.md#папки-и-теги)
+
+После переименования обновите видимое имя. После удаления тега сбросьте фильтр, если он был активен. Если удалена открытая папка, вернитесь к родительской папке или корню и обновите списки. При `409` при удалении папки покажите, что в ней есть подпапки. Режимы сортировки списка файлов описаны в [контракте аудиотеки](frontend-api.md#аудиотека-и-фильтры). История поисковых строк доступна только при реализации хранения на клиенте.
 
 ## Загрузка, обработка и результат
 

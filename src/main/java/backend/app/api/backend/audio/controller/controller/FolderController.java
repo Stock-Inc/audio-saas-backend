@@ -1,6 +1,7 @@
 package backend.app.api.backend.audio.controller.controller;
 
 import backend.app.api.backend.audio.controller.dto.CreateFolderRequest;
+import backend.app.api.backend.audio.controller.dto.CreateNamedItemRequest;
 import backend.app.api.backend.audio.controller.dto.FolderResponse;
 import backend.app.api.backend.audio.controller.service.AudioLibraryService;
 import backend.app.api.backend.config.OpenApiConfig;
@@ -17,7 +18,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -57,6 +60,37 @@ public class FolderController {
                 request.name(),
                 request.parentId()
         );
+    }
+
+    @PatchMapping("/{id}")
+    @Operation(summary = "Rename folder")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Updated folder"),
+            @ApiResponse(responseCode = "400", description = "Invalid UUID or name", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Folder unavailable", content = @Content),
+            @ApiResponse(responseCode = "409", description = "Name already exists", content = @Content)
+    })
+    public FolderResponse rename(
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody CreateNamedItemRequest request,
+            Authentication authentication
+    ) {
+        return libraryService.renameFolder(authentication.getName(), id, request.name());
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete folder", description = "Moves audio files to the library root. A folder with subfolders cannot be deleted.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Folder deleted", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Invalid UUID", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content),
+            @ApiResponse(responseCode = "409", description = "Folder has subfolders", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Folder unavailable", content = @Content)
+    })
+    public void delete(@PathVariable("id") UUID id, Authentication authentication) {
+        libraryService.deleteFolder(authentication.getName(), id);
     }
 
     @GetMapping

@@ -32,6 +32,10 @@ public class AudioTag {
     @Column(nullable = false, length = 100)
     private String name;
 
+    public void rename(String name) {
+        this.name = name;
+    }
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

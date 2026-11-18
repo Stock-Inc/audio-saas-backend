@@ -93,4 +93,8 @@ Volumes с данными при обычном `down` сохраняются.
 - `/api/v1/folders` и `/api/v1/tags` — организация библиотеки.
 - `GET /api/v1/folders/{id}/children` — непосредственные подпапки. [Примеры запросов и JSON](docs/frontend-api.md#json-папки-и-навигация-по-вложенным-папкам).
 
+- `PATCH /api/v1/folders/{id}` и `PATCH /api/v1/tags/{id}` — переименование. `DELETE` по тем же путям — удаление.
+- `GET /api/v1/audio?sort=NAME_ASC` — сортировка файлов. Доступны имя, дата загрузки и размер.
+- `GET /api/v1/audio/search` — полнотекстовый поиск по релевантности. История поисковых запросов не хранится.
+
 Полные тела запросов, ответы, статусы и TypeScript-примеры находятся в [frontend-api.md](docs/frontend-api.md).

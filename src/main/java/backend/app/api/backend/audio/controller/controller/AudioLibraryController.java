@@ -1,6 +1,7 @@
 package backend.app.api.backend.audio.controller.controller;
 
 import backend.app.api.backend.audio.controller.dto.AudioFileResponse;
+import backend.app.api.backend.audio.controller.dto.AudioSort;
 import backend.app.api.backend.audio.controller.dto.BulkMoveAudioRequest;
 import backend.app.api.backend.audio.controller.dto.MoveAudioRequest;
 import backend.app.api.backend.audio.controller.dto.SetTagsRequest;
@@ -86,13 +87,15 @@ public class AudioLibraryController {
             @Parameter(description = "UUID папки или строка null для файлов в корне", example = "null")
             @RequestParam(required = false) String folderId,
             @Parameter(description = "Фильтр по тегу")
-            @RequestParam(required = false) UUID tagId
+            @RequestParam(required = false) UUID tagId,
+            @Parameter(description = "Sort by upload date, filename (case-insensitive), or size in bytes")
+            @RequestParam(name = "sort", defaultValue = "NEWEST") AudioSort sort
     ) {
         if (!StringUtils.hasText(folderId)) {
-            return libraryService.audioFiles(authentication.getName(), null, tagId, false);
+            return libraryService.audioFiles(authentication.getName(), null, tagId, false, sort);
         }
         if ("null".equals(folderId)) {
-            return libraryService.audioFiles(authentication.getName(), null, tagId, true);
+            return libraryService.audioFiles(authentication.getName(), null, tagId, true, sort);
         }
 
         UUID folderUuid;
@@ -101,7 +104,7 @@ public class AudioLibraryController {
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid folderId", ex);
         }
-        return libraryService.audioFiles(authentication.getName(), folderUuid, tagId, true);
+        return libraryService.audioFiles(authentication.getName(), folderUuid, tagId, true, sort);
     }
 
     @GetMapping("/{audioId}")

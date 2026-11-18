@@ -40,6 +40,10 @@ public class AudioFolder {
     @JoinColumn(name = "parent_id")
     private AudioFolder parent;
 
+    public void rename(String name) {
+        this.name = name;
+    }
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

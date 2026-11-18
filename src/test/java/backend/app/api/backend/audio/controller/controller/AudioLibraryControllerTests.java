@@ -1,6 +1,8 @@
 package backend.app.api.backend.audio.controller.controller;
 
+import backend.app.api.backend.audio.controller.dto.AudioSort;
 import backend.app.api.backend.audio.controller.dto.FolderResponse;
+import backend.app.api.backend.audio.controller.dto.TagResponse;
 import backend.app.api.backend.audio.controller.service.AudioLibraryService;
 import backend.app.api.backend.config.OpenApiConfig;
 import backend.app.api.backend.config.SecurityConfig;
@@ -32,7 +34,9 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -89,9 +93,9 @@ class AudioLibraryControllerTests {
                         .param("tagId", tagId.toString()).with(oidcLogin()))
                 .andExpect(status().isOk());
 
-        verify(libraryService).audioFiles(anyString(), isNull(), isNull(), eq(false));
-        verify(libraryService).audioFiles(anyString(), isNull(), isNull(), eq(true));
-        verify(libraryService).audioFiles(anyString(), isNull(), eq(tagId), eq(true));
+        verify(libraryService).audioFiles(anyString(), isNull(), isNull(), eq(false), eq(AudioSort.NEWEST));
+        verify(libraryService).audioFiles(anyString(), isNull(), isNull(), eq(true), eq(AudioSort.NEWEST));
+        verify(libraryService).audioFiles(anyString(), isNull(), eq(tagId), eq(true), eq(AudioSort.NEWEST));
     }
 
     @Test
@@ -102,7 +106,45 @@ class AudioLibraryControllerTests {
         mockMvc.perform(get("/api/v1/audio").param("folderId", "invalid").with(oidcLogin()))
                 .andExpect(status().isBadRequest());
 
-        verify(libraryService).audioFiles(anyString(), eq(folderId), isNull(), eq(true));
+        verify(libraryService).audioFiles(anyString(), eq(folderId), isNull(), eq(true), eq(AudioSort.NEWEST));
+    }
+
+    @Test
+    void audioListAcceptsExplicitSortAndRejectsUnknownSort() throws Exception {
+        mockMvc.perform(get("/api/v1/audio").param("sort", "NAME_ASC").with(oidcLogin()))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/audio").param("sort", "unknown").with(oidcLogin()))
+                .andExpect(status().isBadRequest());
+
+        verify(libraryService).audioFiles(anyString(), isNull(), isNull(), eq(false), eq(AudioSort.NAME_ASC));
+    }
+
+    @Test
+    void folderAndTagCanBeRenamedAndDeleted() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(libraryService.renameFolder(anyString(), eq(id), eq("New name")))
+                .thenReturn(new FolderResponse(id, "New name", null, null, null));
+        when(libraryService.renameTag(anyString(), eq(id), eq("New name")))
+                .thenReturn(new TagResponse(id, "New name", null));
+
+        for (String resource : List.of("folders", "tags")) {
+            mockMvc.perform(patch("/api/v1/" + resource + "/{id}", id)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"name":"New name"}
+                                    """)
+                            .with(oidcLogin()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.name").value("New name"));
+            mockMvc.perform(delete("/api/v1/" + resource + "/{id}", id).with(oidcLogin()))
+                    .andExpect(status().isNoContent())
+                    .andExpect(content().string(""));
+            mockMvc.perform(delete("/api/v1/" + resource + "/{id}", id))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        verify(libraryService).deleteFolder(anyString(), eq(id));
+        verify(libraryService).deleteTag(anyString(), eq(id));
     }
 
     @Test
@@ -253,6 +295,12 @@ class AudioLibraryControllerTests {
                         .exists())
                 .andExpect(jsonPath("$.paths['/api/v1/tags'].get")
                         .exists())
+                .andExpect(jsonPath("$.paths['/api/v1/folders/{id}'].patch.responses['409']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/folders/{id}'].delete.responses['409']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/tags/{id}'].patch.responses['200']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/tags/{id}'].delete.responses['204']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/audio'].get.parameters[?(@.name == 'sort')].schema.enum",
+                        org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.hasItem("NAME_ASC"))))
                 .andExpect(jsonPath("$.components.schemas.AudioFileResponse")
                         .exists())
                 .andExpect(jsonPath(

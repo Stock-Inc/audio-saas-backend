@@ -14,6 +14,8 @@ public interface AudioTagRepository extends JpaRepository<AudioTag, UUID> {
 
     List<AudioTag> findAllByIdInAndOwnerId(Set<UUID> ids, String ownerId);
 
+    boolean existsByOwnerIdAndNameIgnoreCaseAndIdNot(String ownerId, String name, UUID id);
+
     Optional<AudioTag> findByIdAndOwnerId(UUID id, String ownerId);
 
     boolean existsByOwnerIdAndNameIgnoreCase(String ownerId, String name);
