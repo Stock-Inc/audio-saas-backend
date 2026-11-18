@@ -16,5 +16,6 @@
     <include file="db/changelog/changes/003-add-library-and-results.xml"/>
 
     <include file="db/changelog/changes/004-add-nested-folders.xml"/>
+    <include file="db/changelog/changes/005-add-audio-text-search.xml"/>
 
 </databaseChangeLog>

@@ -46,6 +46,28 @@ public class AudioLibraryController {
 
     private final AudioLibraryService libraryService;
 
+    @GetMapping("/search")
+    @Operation(
+            summary = "Найти аудиофайлы по тексту",
+            description = "Поиск по транскриптам и анализу текущего пользователя. "
+                    + "Все значимые слова должны встречаться в одном результате. "
+                    + "Возвращает до 50 файлов за запрос в порядке релевантности."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Найденные файлы или пустой массив"),
+            @ApiResponse(responseCode = "400", description = "Некорректный запрос", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Требуется авторизация", content = @Content)
+    })
+    public List<AudioFileResponse> search(
+            @Parameter(description = "От 1 до 200 символов после удаления пробелов по краям", example = "план релиза")
+            @RequestParam("q") String query,
+            @Parameter(description = "Число пропускаемых результатов", example = "0")
+            @RequestParam(name = "offset", defaultValue = "0") int offset,
+            Authentication authentication
+    ) {
+        return libraryService.searchAudio(authentication.getName(), query, offset);
+    }
+
     @GetMapping
     @Operation(
             summary = "Получить аудиотеку",

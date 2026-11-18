@@ -22,6 +22,7 @@ import org.springdoc.webmvc.core.configuration.SpringDocWebMvcConfiguration;
 import org.springdoc.webmvc.ui.SwaggerConfig;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
@@ -60,6 +61,49 @@ class AudioLibraryControllerTests {
 
     @MockitoBean
     private AudioLibraryService libraryService;
+
+    @Test
+    void searchPassesQueryAndOffsetForAuthenticatedUser() throws Exception {
+        when(libraryService.searchAudio(anyString(), eq("план релиза"), eq(50)))
+                .thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/audio/search")
+                        .param("q", "план релиза")
+                        .param("offset", "50")
+                        .with(oidcLogin()))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[]"));
+
+        verify(libraryService).searchAudio(anyString(), eq("план релиза"), eq(50));
+    }
+
+    @Test
+    void childrenEndpointReturnsDirectChildFolders() throws Exception {
+        UUID parentId = UUID.randomUUID();
+        UUID childId = UUID.randomUUID();
+        when(libraryService.childFolders(anyString(), eq(parentId)))
+                .thenReturn(List.of(new FolderResponse(childId, "Interviews", parentId, null, null)));
+
+        mockMvc.perform(get("/api/v1/folders/{id}/children", parentId).with(oidcLogin()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(childId.toString()))
+                .andExpect(jsonPath("$[0].parentId").value(parentId.toString()));
+    }
+
+    @Test
+    void childrenEndpointRejectsInvalidFolderId() throws Exception {
+        mockMvc.perform(get("/api/v1/folders/invalid/children").with(oidcLogin()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void openApiDocumentsChildrenEndpoint() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/v1/folders/{id}/children'].get.responses['200'].content['application/json'].schema.type")
+                        .value("array"));
+    }
 
     @Test
     void resultEndpointReturnsAttachment() throws Exception {

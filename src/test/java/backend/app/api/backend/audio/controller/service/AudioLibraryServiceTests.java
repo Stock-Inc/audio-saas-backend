@@ -54,6 +54,46 @@ class AudioLibraryServiceTests {
     }
 
     @Test
+    void searchAudioTrimsQueryAndScopesResultsToOwner() {
+        when(audioRepository.searchResults(OWNER_ID, "план релиза", 50))
+                .thenReturn(List.of());
+
+        assertEquals(List.of(), service.searchAudio(OWNER_ID, "  план релиза  ", 50));
+        verify(audioRepository).searchResults(OWNER_ID, "план релиза", 50);
+    }
+
+    @Test
+    void searchAudioRejectsBlankQueryAndNegativeOffset() {
+        assertEquals(HttpStatus.BAD_REQUEST, assertThrows(ResponseStatusException.class,
+                () -> service.searchAudio(OWNER_ID, " ", 0)).getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST, assertThrows(ResponseStatusException.class,
+                () -> service.searchAudio(OWNER_ID, "план", -1)).getStatusCode());
+    }
+
+    @Test
+    void childFoldersReturnsEmptyListForOwnedLeaf() {
+        AudioFolder parent = folder();
+        when(folderRepository.findByIdAndOwnerId(parent.getId(), OWNER_ID))
+                .thenReturn(Optional.of(parent));
+        when(folderRepository.findAllByOwnerIdAndParent_IdOrderByNameAsc(OWNER_ID, parent.getId()))
+                .thenReturn(List.of());
+
+        assertEquals(List.of(), service.childFolders(OWNER_ID, parent.getId()));
+    }
+
+    @Test
+    void childFoldersRejectsUnavailableParentBeforeQueryingChildren() {
+        UUID parentId = UUID.randomUUID();
+        when(folderRepository.findByIdAndOwnerId(parentId, OWNER_ID)).thenReturn(Optional.empty());
+
+        var exception = assertThrows(ResponseStatusException.class,
+                () -> service.childFolders(OWNER_ID, parentId));
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        verify(folderRepository, never()).findAllByOwnerIdAndParent_IdOrderByNameAsc(OWNER_ID, parentId);
+    }
+
+    @Test
     void moveAllMovesEverySelectedAudioToOwnedFolder() {
         AudioUpload first = audio();
         AudioUpload second = audio();

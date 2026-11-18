@@ -90,5 +90,6 @@ Volumes с данными при обычном `down` сохраняются.
 - `GET /api/v1/audio` — аудиотека и фильтры;
 - `GET /api/v1/audio/{id}/result` — скачать готовый JSON;
 - `/api/v1/folders` и `/api/v1/tags` — организация библиотеки.
+- `GET /api/v1/folders/{id}/children` — непосредственные подпапки. [Примеры запросов и JSON](docs/frontend-api.md#json-папки-и-навигация-по-вложенным-папкам).
 
 Полные тела запросов, ответы, статусы и TypeScript-примеры находятся в [frontend-api.md](docs/frontend-api.md).

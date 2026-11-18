@@ -62,6 +62,15 @@ public class AudioLibraryService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<FolderResponse> childFolders(String ownerId, UUID parentId) {
+        resolveFolder(ownerId, parentId);
+        return folderRepository.findAllByOwnerIdAndParent_IdOrderByNameAsc(ownerId, parentId)
+                .stream()
+                .map(FolderResponse::from)
+                .toList();
+    }
+
     @Transactional
     public TagResponse createTag(String ownerId, String requestedName) {
         String name = requestedName.trim();
@@ -124,6 +133,19 @@ public class AudioLibraryService {
         }
 
         return files.stream().map(AudioFileResponse::from).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AudioFileResponse> searchAudio(String ownerId, String query, int offset) {
+        String text = query.strip();
+        if (text.isEmpty() || text.length() > 200 || offset < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid search query or offset");
+        }
+
+        return audioRepository.searchResults(ownerId, text, offset)
+                .stream()
+                .map(AudioFileResponse::from)
+                .toList();
     }
 
     @Transactional(readOnly = true)

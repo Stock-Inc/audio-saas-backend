@@ -14,7 +14,8 @@ public record CreateFolderRequest(
         String name,
 
         @Schema(
-                description = "ID родительской папки; null создаёт папку в корне",
+                description = "UUID родительской папки. Если поле отсутствует или равно null, папка создаётся в корне.",
+                example = "6de80c36-6c03-4a2e-8c03-57f8f1bf1b6a",
                 nullable = true
         )
         UUID parentId

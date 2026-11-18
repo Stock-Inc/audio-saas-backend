@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                            https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="005-add-audio-text-search" author="codex">
+        <addColumn tableName="audio_uploads">
+            <column name="result_search_vector" type="tsvector"/>
+        </addColumn>
+        <sql splitStatements="false"><![CDATA[
+            CREATE FUNCTION audio_result_search_vector(result bytea) RETURNS tsvector
+            LANGUAGE sql STABLE STRICT AS $$
+                SELECT to_tsvector(
+                    'pg_catalog.russian',
+                    jsonb_path_query_array(document, '$.transcript.segments[*].text')
+                    || COALESCE(document -> 'analysis', 'null'::jsonb)
+                )
+                FROM (SELECT convert_from(result, 'UTF8')::jsonb AS document) AS parsed
+            $$
+        ]]></sql>
+        <sql splitStatements="false"><![CDATA[
+            CREATE FUNCTION update_audio_result_search_vector() RETURNS trigger
+            LANGUAGE plpgsql AS $$
+            BEGIN
+                NEW.result_search_vector := audio_result_search_vector(NEW.result_data);
+                RETURN NEW;
+            END;
+            $$
+        ]]></sql>
+        <sql>
+            CREATE TRIGGER refresh_audio_result_search_vector
+            BEFORE INSERT OR UPDATE OF result_data ON audio_uploads
+            FOR EACH ROW EXECUTE FUNCTION update_audio_result_search_vector();
+
+            UPDATE audio_uploads
+            SET result_search_vector = audio_result_search_vector(result_data)
+            WHERE result_data IS NOT NULL;
+
+            CREATE INDEX idx_audio_uploads_result_search
+            ON audio_uploads USING GIN (result_search_vector);
+        </sql>
+        <rollback>
+            <sql>
+                DROP TRIGGER refresh_audio_result_search_vector ON audio_uploads;
+                DROP FUNCTION update_audio_result_search_vector();
+                DROP FUNCTION audio_result_search_vector(bytea);
+            </sql>
+            <dropColumn tableName="audio_uploads" columnName="result_search_vector"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>
